@@ -5,7 +5,6 @@ const REQUIRED_SECRETS = [
   "CREEM_API_KEY",
   "CREEM_WEBHOOK_SECRET",
   "CREEM_PRODUCT_ID",
-  "TURNSTILE_SITE_KEY",
   "TURNSTILE_SECRET_KEY",
   "FOUNDER_ACCESS_SECRET",
   "GITHUB_CLIENT_ID",
@@ -52,6 +51,10 @@ const hyperdrive = wrangler.match(
 if (!hyperdrive) {
   fail("wrangler.jsonc needs a dedicated HYPERDRIVE binding before deployment");
 }
+const turnstileSiteKey = wrangler.match(/"TURNSTILE_SITE_KEY"\s*:\s*"([^"]+)"/)?.[1];
+if (!turnstileSiteKey || /^1x0{10,}/.test(turnstileSiteKey)) {
+  fail("wrangler.jsonc needs the production TURNSTILE_SITE_KEY public variable");
+}
 
 const secretFile = ".secrets.production";
 if (!existsSync(secretFile)) {
@@ -74,7 +77,7 @@ for (const key of ["FOUNDER_ACCESS_SECRET", "RATE_LIMIT_SALT", "MAINTENANCE_SECR
 if (new Set(["FOUNDER_ACCESS_SECRET", "RATE_LIMIT_SALT", "MAINTENANCE_SECRET"].map((key) => secrets.get(key))).size !== 3) {
   fail("FOUNDER_ACCESS_SECRET, RATE_LIMIT_SALT, and MAINTENANCE_SECRET must use different values");
 }
-if (/^1x0{10,}/.test(secrets.get("TURNSTILE_SITE_KEY") ?? "") || /^1x0{10,}/.test(secrets.get("TURNSTILE_SECRET_KEY") ?? "")) {
+if (/^1x0{10,}/.test(secrets.get("TURNSTILE_SECRET_KEY") ?? "")) {
   fail("production cannot use Cloudflare's published Turnstile test keys");
 }
 

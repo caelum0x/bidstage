@@ -132,7 +132,6 @@ one value without writing it to source:
 bunx wrangler secret put CREEM_API_KEY
 bunx wrangler secret put CREEM_WEBHOOK_SECRET
 bunx wrangler secret put CREEM_PRODUCT_ID
-bunx wrangler secret put TURNSTILE_SITE_KEY
 bunx wrangler secret put TURNSTILE_SECRET_KEY
 bunx wrangler secret put FOUNDER_ACCESS_SECRET
 bunx wrangler secret put GITHUB_CLIENT_ID
@@ -147,8 +146,8 @@ When `PAYMENT_PROVIDER=dodo`, set `DODO_PAYMENTS_API_KEY`,
 `DODO_PAYMENTS_BUSINESS_ID` instead. Keep the previous provider's webhook secret
 available during migration so late refunds and disputes can still be processed.
 
-`TURNSTILE_SITE_KEY` is public in the browser but is managed with the same
-release prompts so one command works across environments. For sandbox staging,
+`TURNSTILE_SITE_KEY` is public browser configuration committed in
+`wrangler.jsonc`; only `TURNSTILE_SECRET_KEY` belongs in Worker secrets. For sandbox staging,
 set `CREEM_TEST_MODE=true` and use a staging `APP_URL`.
 Production uses the `APP_URL` and `CREEM_TEST_MODE=false` values committed in
 `wrangler.jsonc`. Secrets must be set separately for every named Wrangler

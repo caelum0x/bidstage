@@ -17,6 +17,7 @@
     "build:worker": "opennextjs-cloudflare build",
     "create:hyperdrive": "zsh scripts/create-hyperdrive.zsh",
     "bootstrap:production-db": "zsh scripts/bootstrap-production-database.zsh",
+    "deploy:bootstrap": "wrangler deploy --config wrangler.bootstrap.jsonc --x-autoconfig=false",
     "preflight:production": "node --import tsx scripts/production-preflight.ts",
     "deploy:worker": "bun run preflight:production && opennextjs-cloudflare build && wrangler deploy --secrets-file .secrets.production",
     "upload:worker": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
