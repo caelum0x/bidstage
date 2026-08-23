@@ -49,10 +49,8 @@ database name must contain `test`:
 TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/bidstage_test bun run test:integration
 ```
 
-Require a passing GitHub `Verify` workflow on `main`. That job supplies
-PostgreSQL 17, runs the unit and integration suites, builds the OpenNext Worker,
-performs a Wrangler upload dry run, and checks the production server over HTTP.
-The workflow receives repository read permission only.
+Do not deploy if this command fails. This is a manual release gate, so the
+release operator must preserve the terminal output with the release record.
 
 ## 3. Create Hyperdrive
 
@@ -137,7 +135,7 @@ identity lookup; founder sessions contain a random token whose hash is stored in
 PostgreSQL.
 
 Keep `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_URL_SCANNER_TOKEN` in the private
-operator/CI environment. They are not application runtime secrets and must not
+operator environment. They are not application runtime secrets and must not
 be added with `wrangler secret put`. Use a custom account token limited to URL
 Scanner Read and Write; never use the Global API Key. Bidstage submits public
 scans because project destinations and receipts are public and the free/Radar
@@ -147,10 +145,17 @@ scanner allowance does not include unlisted scans.
 
 ```text
 bun run typecheck
+bun run test
+TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/bidstage_test bun run test:integration
 bun run build:worker
 bunx wrangler deploy --dry-run
 bun run deploy:worker
+SMOKE_BASE_URL=https://bidstage.app bun run smoke:http
 ```
+
+Run these commands in order from a clean `main` checkout. Stop at the first
+failure. The final smoke test must run against the deployed origin, not a local
+development server.
 
 The accepted artifact contains `.open-next/worker.js` plus immutable assets in
 `.open-next/assets`. The current dry run is approximately 5.9 MiB before gzip

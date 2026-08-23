@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { listingSlug, normalizeDestination, parseCheckoutInput, parseRankQuoteInput, requestIp, requestSubject } from "../lib/market";
 import { existingPlacementMatches, founderCanEditListing } from "../lib/listing-ownership";
 import { containsOsiApprovedLicense } from "../lib/osi";
@@ -740,12 +740,13 @@ test("public crawl routes expose real open-source records and exclude private fl
   assert.match(listing, /BreadcrumbList/);
 });
 
-test("continuous verification requires a real isolated PostgreSQL integration database in CI", () => {
+test("manual production verification requires isolated PostgreSQL and deployed HTTP", () => {
   const packageManifest = JSON.parse(
     readFileSync(new URL("../package.json", import.meta.url), "utf8"),
   ) as { scripts: Record<string, string> };
   assert.match(packageManifest.scripts["test:integration"] ?? "", /BIDSTAGE_REQUIRE_INTEGRATION=1/);
   assert.match(packageManifest.scripts.verify ?? "", /test:integration/);
+  assert.match(packageManifest.scripts["smoke:http"] ?? "", /http-smoke/);
 
   const integration = readFileSync(new URL("./integration/database.test.ts", import.meta.url), "utf8");
   assert.match(integration, /databaseName\.includes\("test"\)/);
@@ -756,20 +757,16 @@ test("continuous verification requires a real isolated PostgreSQL integration da
   assert.match(integration, /does not match the checkout intent/);
   assert.match(integration, /event_refund_300/);
 
-  const workflow = readFileSync(new URL("../.github/workflows/verify.yml", import.meta.url), "utf8");
-  assert.match(workflow, /POSTGRES_DB: bidstage_test/);
-  assert.match(workflow, /bun run test:integration/);
-  assert.match(workflow, /bun run migrate/);
-  assert.match(workflow, /bun run build:worker/);
-  assert.match(workflow, /wrangler deploy --dry-run/);
-  assert.match(workflow, /bun run smoke:http/);
-  assert.match(workflow, /permissions:\n  contents: read/);
-
   const smoke = readFileSync(new URL("../scripts/http-smoke.ts", import.meta.url), "utf8");
   assert.match(smoke, /health\.database === "ready"/);
   assert.match(smoke, /auth error page is indexable/);
   assert.match(smoke, /auditResponseHeaders/);
   assert.match(smoke, /sitemap exposes a private route/);
+
+  const deployment = readFileSync(new URL("../DEPLOYMENT.md", import.meta.url), "utf8");
+  assert.match(deployment, /TEST_DATABASE_URL=.*bun run test:integration/);
+  assert.match(deployment, /SMOKE_BASE_URL=.*bun run smoke:http/);
+  assert.equal(existsSync(new URL("../.github/workflows/verify.yml", import.meta.url)), false);
 });
 
 test("rank history is compact, public, and captured from deterministic open-source ranks", () => {

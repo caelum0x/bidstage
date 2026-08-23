@@ -105,10 +105,11 @@ TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/bidstage_test bu
 
 The command refuses other database names. It creates a random schema, applies
 all migrations, tests concurrent settlement and reversals, then drops that
-schema. GitHub Actions runs the same suite with an ephemeral PostgreSQL 17
-service before the Worker build and upload dry run. CI then starts the production
-Next.js server and checks health, category rendering, noindex metadata, security
-headers, crawler rules, and sitemap privacy boundaries over HTTP.
+schema. Run it from the release machine against an isolated PostgreSQL database
+before building the Worker. After deployment, point `SMOKE_BASE_URL` at the
+release origin and run `bun run smoke:http` to check health, category rendering,
+noindex metadata, security headers, crawler rules, and sitemap privacy boundaries
+over HTTP.
 
 ## Cloudflare Worker build
 
@@ -155,7 +156,7 @@ an internal immutable operator audit event.
 
 The scan command requires `CLOUDFLARE_ACCOUNT_ID` and a least-privilege
 `CLOUDFLARE_URL_SCANNER_TOKEN` with URL Scanner Read and Write permissions in
-the operator or CI secret environment. Do not upload that token to the
+the private operator environment. Do not upload that token to the
 application Worker. The first invocation submits a public scan; later
 invocations collect and persist the finished verdict. Use `--force` only when a
 fresh passing review must be replaced.
