@@ -17,7 +17,7 @@ typeset runtime_password=''
 typeset database_url=''
 
 cleanup() {
-  unset owner_password runtime_password database_url PGPASSWORD BIDSTAGE_RUNTIME_PASSWORD DATABASE_URL
+  unset owner_password runtime_password database_url PGPASSWORD DATABASE_URL
 }
 trap cleanup EXIT INT TERM
 
@@ -59,12 +59,16 @@ for command_name in psql createdb openssl bun; do
 done
 
 runtime_password="$(openssl rand -hex 32)"
+if [[ ${#runtime_password} -ne 64 || "$runtime_password" == *[^0-9a-f]* ]]; then
+  print -u2 'Failed to generate a safe runtime password.'
+  exit 1
+fi
 
 export PGHOST="$neon_direct_host"
 export PGPORT='5432'
 export PGUSER="$owner_user"
 export PGPASSWORD="$owner_password"
-export PGSSLMODE='require'
+export PGSSLMODE='verify-full'
 export PGCONNECT_TIMEOUT='15'
 
 print 'Checking the Neon owner connection...'
@@ -89,7 +93,7 @@ database_url="$(
     url.port = "5432";
     url.username = process.env.BIDSTAGE_URL_USER;
     url.password = process.env.BIDSTAGE_URL_PASSWORD;
-    url.searchParams.set("sslmode", "require");
+    url.searchParams.set("sslmode", "verify-full");
     process.stdout.write(url.toString());
   '
 )"
@@ -98,28 +102,26 @@ print 'Applying Bidstage migrations...'
 (cd "$project_directory" && DATABASE_URL="$database_url" bun run migrate)
 
 export PGDATABASE="$application_database"
-export BIDSTAGE_RUNTIME_PASSWORD="$runtime_password"
 
 print 'Creating or rotating the restricted bidstage_runtime role...'
-psql --no-psqlrc -X <<'SQL'
+psql --no-psqlrc -X <<SQL
 \set ON_ERROR_STOP on
-\getenv runtime_password BIDSTAGE_RUNTIME_PASSWORD
 
 SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'bidstage_runtime') AS runtime_role_exists \gset
 \if :runtime_role_exists
   ALTER ROLE bidstage_runtime
-    WITH LOGIN PASSWORD :'runtime_password'
+    WITH LOGIN PASSWORD '${runtime_password}'
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 \else
   CREATE ROLE bidstage_runtime
-    WITH LOGIN PASSWORD :'runtime_password'
+    WITH LOGIN PASSWORD '${runtime_password}'
     NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
 \endif
 SQL
 
 psql --no-psqlrc -X --file "${project_directory}/db/runtime-role-grants.sql"
 
-unset owner_password PGPASSWORD database_url DATABASE_URL BIDSTAGE_RUNTIME_PASSWORD
+unset owner_password PGPASSWORD database_url DATABASE_URL
 mkdir -p "${project_directory}/.wrangler"
 export WRANGLER_LOG_PATH="${project_directory}/.wrangler/wrangler.log"
 
@@ -131,7 +133,7 @@ print 'Creating the Cloudflare Hyperdrive binding...'
   --database "$application_database" \
   --origin-user "$runtime_role" \
   --origin-password "$runtime_password" \
-  --sslmode require \
+  --sslmode verify-full \
   --caching-disabled \
   --binding HYPERDRIVE \
   --update-config)
