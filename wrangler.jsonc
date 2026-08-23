@@ -1,78 +1,83 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "bidstage",
-  "account_id": "c7a5b49549dcb64f2e258db485c723ca",
-  "main": "custom-worker.ts",
-  "compatibility_date": "2026-08-23",
-  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "workers_dev": false,
-  "preview_urls": false,
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS"
-  },
-  "ratelimits": [
-    {
-      "name": "EDGE_WRITE_RATE_LIMITER",
-      "namespace_id": "284712001",
-      "simple": {
-        "limit": 20,
-        "period": 60
-      }
-    }
-  ],
-  "services": [
-    {
-      "binding": "WORKER_SELF_REFERENCE",
-      "service": "bidstage"
-    }
-  ],
-  "routes": [
-    {
-      "pattern": "bidstage.app",
-      "custom_domain": true
-    }
-  ],
-  "placement": {
-    "mode": "smart"
-  },
-  "observability": {
-    "enabled": true,
-    "logs": {
-      "enabled": true,
-      "head_sampling_rate": 1,
-      "invocation_logs": false
-    },
-    "traces": {
-      "enabled": true,
-      "head_sampling_rate": 0.05
-    }
-  },
-  "triggers": {
-    "crons": ["15 * * * *"]
-  },
-  "vars": {
-    "APP_URL": "https://bidstage.app",
-    "PAYMENT_PROVIDER": "creem",
-    "CREEM_TEST_MODE": "false"
-  },
-  "secrets": {
-    "required": [
-      "CREEM_API_KEY",
-      "CREEM_WEBHOOK_SECRET",
-      "CREEM_PRODUCT_ID",
-      "TURNSTILE_SITE_KEY",
-      "TURNSTILE_SECRET_KEY",
-      "FOUNDER_ACCESS_SECRET",
-      "GITHUB_CLIENT_ID",
-      "GITHUB_CLIENT_SECRET",
-      "GITHUB_API_TOKEN",
-      "RATE_LIMIT_SALT",
-      "MAINTENANCE_SECRET"
-    ]
-  }
-
-  // Add the HYPERDRIVE binding after provisioning it from the dedicated Neon
-  // runtime role. The production preflight refuses a direct DATABASE_URL.
-  // DEPLOYMENT.md contains the command and configuration block.
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "bidstage",
+	"account_id": "c7a5b49549dcb64f2e258db485c723ca",
+	"main": "custom-worker.ts",
+	"compatibility_date": "2026-08-23",
+	"compatibility_flags": [
+		"nodejs_compat",
+		"global_fetch_strictly_public"
+	],
+	"workers_dev": false,
+	"preview_urls": false,
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"ratelimits": [
+		{
+			"name": "EDGE_WRITE_RATE_LIMITER",
+			"namespace_id": "284712001",
+			"simple": {
+				"limit": 20,
+				"period": 60
+			}
+		}
+	],
+	"services": [
+		{
+			"binding": "WORKER_SELF_REFERENCE",
+			"service": "bidstage"
+		}
+	],
+	"routes": [
+		{
+			"pattern": "bidstage.app",
+			"custom_domain": true
+		}
+	],
+	"placement": {
+		"mode": "smart"
+	},
+	"observability": {
+		"enabled": true,
+		"logs": {
+			"enabled": true,
+			"head_sampling_rate": 1,
+			"invocation_logs": false
+		},
+		"traces": {
+			"enabled": true,
+			"head_sampling_rate": 0.05
+		}
+	},
+	"triggers": {
+		"crons": ["15 * * * *"]
+	},
+	"vars": {
+		"APP_URL": "https://bidstage.app",
+		"PAYMENT_PROVIDER": "creem",
+		"CREEM_TEST_MODE": "false"
+	},
+	"secrets": {
+		"required": [
+			"CREEM_API_KEY",
+			"CREEM_WEBHOOK_SECRET",
+			"CREEM_PRODUCT_ID",
+			"TURNSTILE_SITE_KEY",
+			"TURNSTILE_SECRET_KEY",
+			"FOUNDER_ACCESS_SECRET",
+			"GITHUB_CLIENT_ID",
+			"GITHUB_CLIENT_SECRET",
+			"GITHUB_API_TOKEN",
+			"RATE_LIMIT_SALT",
+			"MAINTENANCE_SECRET"
+		]
+	},
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "af2067dc7e2543c79a66ff16513bf980"
+		}
+	]
 }
