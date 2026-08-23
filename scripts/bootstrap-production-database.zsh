@@ -27,6 +27,12 @@ if [[ ! -f "$credential_file" ]]; then
   exit 1
 fi
 
+if grep -Eq '"binding"[[:space:]]*:[[:space:]]*"HYPERDRIVE"' "${project_directory}/wrangler.jsonc" \
+  && grep -Eq '"id"[[:space:]]*:[[:space:]]*"[0-9a-f]{32}"' "${project_directory}/wrangler.jsonc"; then
+  print 'Hyperdrive is already configured; no database credentials were changed.'
+  exit 0
+fi
+
 if [[ "$(stat -f '%OLp' "$credential_file")" != '600' ]]; then
   chmod 600 "$credential_file"
 fi
