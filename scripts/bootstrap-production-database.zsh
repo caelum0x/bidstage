@@ -10,6 +10,7 @@ readonly neon_direct_host="${BIDSTAGE_NEON_DIRECT_HOST:-ep-long-base-axpirpa0.c-
 readonly bootstrap_database="neondb"
 readonly application_database="bidstage"
 readonly runtime_role="bidstage_runtime"
+readonly postgres_root_certificate="${BIDSTAGE_PGSSLROOTCERT:-/etc/ssl/cert.pem}"
 
 typeset owner_user=''
 typeset owner_password=''
@@ -50,6 +51,11 @@ if [[ "$neon_direct_host" != ep-*.neon.tech || "$neon_direct_host" == *-pooler.*
   print -u2 'BIDSTAGE_NEON_DIRECT_HOST must be a direct ep-*.neon.tech hostname without -pooler.'
   exit 1
 fi
+if [[ ! -r "$postgres_root_certificate" || ! -s "$postgres_root_certificate" ]]; then
+  print -u2 "A readable PostgreSQL CA bundle is required at ${postgres_root_certificate}."
+  print -u2 'Set BIDSTAGE_PGSSLROOTCERT to a trusted PEM CA bundle and retry.'
+  exit 1
+fi
 
 for command_name in psql createdb openssl bun; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
@@ -69,6 +75,7 @@ export PGPORT='5432'
 export PGUSER="$owner_user"
 export PGPASSWORD="$owner_password"
 export PGSSLMODE='verify-full'
+export PGSSLROOTCERT="$postgres_root_certificate"
 export PGCONNECT_TIMEOUT='15'
 
 print 'Checking the Neon owner connection...'
