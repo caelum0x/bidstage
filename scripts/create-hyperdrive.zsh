@@ -39,7 +39,7 @@ bunx wrangler hyperdrive create bidstage-neon \
   --database bidstage \
   --origin-user bidstage_runtime \
   --origin-password "$bidstage_neon_password" \
-  --sslmode verify-full \
+  --sslmode require \
   --caching-disabled \
   --binding HYPERDRIVE \
   --update-config

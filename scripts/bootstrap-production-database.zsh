@@ -140,7 +140,7 @@ print 'Creating the Cloudflare Hyperdrive binding...'
   --database "$application_database" \
   --origin-user "$runtime_role" \
   --origin-password "$runtime_password" \
-  --sslmode verify-full \
+  --sslmode require \
   --caching-disabled \
   --binding HYPERDRIVE \
   --update-config)
