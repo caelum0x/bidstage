@@ -117,8 +117,7 @@ psql --no-psqlrc -X <<SQL
 SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'bidstage_runtime') AS runtime_role_exists \gset
 \if :runtime_role_exists
   ALTER ROLE bidstage_runtime
-    WITH LOGIN PASSWORD '${runtime_password}'
-    NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS;
+    WITH LOGIN PASSWORD '${runtime_password}';
 \else
   CREATE ROLE bidstage_runtime
     WITH LOGIN PASSWORD '${runtime_password}'

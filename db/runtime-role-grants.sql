@@ -15,6 +15,14 @@ BEGIN
   IF pg_has_role('bidstage_runtime', 'neon_superuser', 'member') THEN
     RAISE EXCEPTION 'bidstage_runtime must not inherit neon_superuser';
   END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM pg_roles
+    WHERE rolname = 'bidstage_runtime'
+      AND (rolsuper OR rolcreatedb OR rolcreaterole OR rolreplication OR rolbypassrls)
+  ) THEN
+    RAISE EXCEPTION 'bidstage_runtime has elevated PostgreSQL privileges';
+  END IF;
 END
 $$;
 
