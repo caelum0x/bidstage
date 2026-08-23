@@ -747,6 +747,7 @@ test("manual production verification requires isolated PostgreSQL and deployed H
   assert.match(packageManifest.scripts["test:integration"] ?? "", /BIDSTAGE_REQUIRE_INTEGRATION=1/);
   assert.match(packageManifest.scripts.verify ?? "", /test:integration/);
   assert.match(packageManifest.scripts["smoke:http"] ?? "", /http-smoke/);
+  assert.match(packageManifest.scripts["create:hyperdrive"] ?? "", /create-hyperdrive\.zsh/);
   assert.match(packageManifest.scripts["deploy:worker"] ?? "", /preflight:production/);
   assert.match(packageManifest.scripts["deploy:worker"] ?? "", /--secrets-file \.secrets\.production/);
 
@@ -780,6 +781,20 @@ test("manual production verification requires isolated PostgreSQL and deployed H
   assert.match(preflight, /BLOCKED_NEXT_VERSIONS = new Set\(\["16\.3\.0"\]\)/);
   assert.match(preflight, /dedicated HYPERDRIVE binding/);
   assert.match(preflight, /chmod 600/);
+
+  const hyperdriveSetup = readFileSync(new URL("../scripts/create-hyperdrive.zsh", import.meta.url), "utf8");
+  assert.match(hyperdriveSetup, /\*-pooler\.\*/);
+  assert.match(hyperdriveSetup, /--database bidstage/);
+  assert.match(hyperdriveSetup, /--origin-user bidstage_runtime/);
+  assert.match(hyperdriveSetup, /--update-config/);
+  assert.doesNotMatch(hyperdriveSetup, /neondb_owner/);
+
+  const runtimeGrants = readFileSync(new URL("../db/runtime-role-grants.sql", import.meta.url), "utf8");
+  assert.match(runtimeGrants, /current_database\(\) = 'bidstage'/);
+  assert.match(runtimeGrants, /pg_has_role\('bidstage_runtime', 'neon_superuser', 'member'\)/);
+  assert.match(runtimeGrants, /REVOKE CREATE ON SCHEMA public FROM bidstage_runtime/);
+  assert.match(runtimeGrants, /GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES/);
+  assert.match(runtimeGrants, /ALTER DEFAULT PRIVILEGES IN SCHEMA public/);
 
   const database = readFileSync(new URL("../lib/db.ts", import.meta.url), "utf8");
   assert.match(database, /new Client\(\{ connectionString \}\)/);

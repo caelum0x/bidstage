@@ -29,6 +29,9 @@ Obtain these before release:
 Never place any of these values in a committed file or a command literal. The
 Cloudflare token previously pasted into chat must be revoked and replaced with a
 least-privilege deployment token.
+Rotate any database password exposed in chat, logs, shell history, or an issue
+before using that database. Do not paste a connection string into a support
+conversation.
 
 ## 2. Create the database
 
@@ -54,17 +57,39 @@ release operator must preserve the terminal output with the release record.
 
 ## 3. Create Hyperdrive
 
-Authenticate Wrangler through its browser login or an unexposed environment
-token. Create one Hyperdrive configuration from the restricted Neon runtime URL:
+Create the `bidstage_runtime` role with SQL rather than the Neon Console. Neon
+grants Console-created roles membership in `neon_superuser`; a SQL-created role
+receives only the privileges you grant. Connect to database `bidstage` with the
+direct migration-owner URL, then create the login and set its password through
+psql's masked prompt:
 
 ```text
-read -s BIDSTAGE_NEON_RUNTIME_URL
-bunx wrangler hyperdrive create bidstage-neon --connection-string="$BIDSTAGE_NEON_RUNTIME_URL" --caching-disabled
-unset BIDSTAGE_NEON_RUNTIME_URL
+read -r -s "BIDSTAGE_NEON_MIGRATION_URL?Direct bidstage owner URL: "
+print
+psql "$BIDSTAGE_NEON_MIGRATION_URL"
+CREATE ROLE bidstage_runtime LOGIN;
+\password bidstage_runtime
+\q
+DATABASE_URL="$BIDSTAGE_NEON_MIGRATION_URL" DATABASE_SSL=true bun run migrate
+psql "$BIDSTAGE_NEON_MIGRATION_URL" --file db/runtime-role-grants.sql
+unset BIDSTAGE_NEON_MIGRATION_URL
 ```
 
-The shell history records only the variable name, not the secret value. Copy the
-returned configuration ID, then add this top-level block to `wrangler.jsonc`:
+`db/runtime-role-grants.sql` refuses any database except `bidstage`, rejects a
+role that inherits `neon_superuser`, grants runtime CRUD access, revokes schema
+creation, and sets matching default privileges for later migrations.
+
+In Neon's Connect dialog, select database `bidstage`, role
+`bidstage_runtime`, and Direct connection. Copy only the hostname, which must
+not contain `-pooler`. Authenticate Wrangler through browser login, then run:
+
+```text
+bun run create:hyperdrive
+```
+
+The helper asks for the direct hostname and masks the runtime password. It
+rejects pooled hosts and uses Wrangler's `--update-config` option to add this
+top-level block to `wrangler.jsonc`:
 
 ```jsonc
 "hyperdrive": [
