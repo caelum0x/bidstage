@@ -1,5 +1,4 @@
-import type { PoolClient } from "pg";
-
+import type { DatabaseClient } from "./db";
 import { privacyHash } from "./privacy-hash";
 import { listingSlug } from "./market";
 
@@ -42,7 +41,7 @@ type AdjustmentRow = {
 };
 
 export async function markPaymentEvent(
-  client: PoolClient,
+  client: DatabaseClient,
   provider: PaymentProvider,
   eventId: string,
   state: "processed" | "ignored",
@@ -68,7 +67,7 @@ export type SettlePlacementInput = {
 };
 
 export async function settlePlacement(
-  client: PoolClient,
+  client: DatabaseClient,
   input: Readonly<SettlePlacementInput>,
 ) {
   const checkoutResult = await client.query<CheckoutRow>(
@@ -243,7 +242,7 @@ export type ReversePlacementInput = {
 };
 
 export async function reversePlacement(
-  client: PoolClient,
+  client: DatabaseClient,
   input: Readonly<ReversePlacementInput>,
 ) {
   const bidResult = await client.query<AdjustmentRow>(

@@ -1,13 +1,15 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { Client, Pool, type PoolClient, type QueryResultRow } from "pg";
 import { databaseEnv } from "./env";
 import { privacyHash } from "./privacy-hash";
 
-const globalPool = globalThis as typeof globalThis & { bidstagePool?: Pool };
+const globalPool = globalThis as typeof globalThis & { bidstageNodePool?: Pool };
 
 type HyperdriveBinding = {
   connectionString: string;
 };
+
+export type DatabaseClient = Pick<PoolClient, "query">;
 
 function hyperdriveConnectionString(): string | undefined {
   try {
@@ -20,28 +22,56 @@ function hyperdriveConnectionString(): string | undefined {
 }
 
 export function database(): Pool {
-  if (!globalPool.bidstagePool) {
-    const hyperdriveUrl = hyperdriveConnectionString();
-    const env = hyperdriveUrl ? undefined : databaseEnv();
-    globalPool.bidstagePool = new Pool({
-      connectionString: hyperdriveUrl ?? env?.databaseUrl,
-      // Workers allow six simultaneous outbound connections. Leave one slot
-      // available for payment, DNS verification, and other request work.
+  if (hyperdriveConnectionString()) {
+    throw new Error("database() is only available to Node migration and operator processes");
+  }
+  if (!globalPool.bidstageNodePool) {
+    const env = databaseEnv();
+    globalPool.bidstageNodePool = new Pool({
+      connectionString: env.databaseUrl,
       max: 5,
       idleTimeoutMillis: 30_000,
       connectionTimeoutMillis: 5_000,
-      ssl: !hyperdriveUrl && env?.databaseSsl ? { rejectUnauthorized: true } : undefined,
+      ssl: env.databaseSsl ? { rejectUnauthorized: true } : undefined,
     });
   }
-  return globalPool.bidstagePool;
+  return globalPool.bidstageNodePool;
+}
+
+async function withHyperdriveClient<T>(connectionString: string, run: (client: Client) => Promise<T>): Promise<T> {
+  const client = new Client({ connectionString });
+  await client.connect();
+  try {
+    return await run(client);
+  } finally {
+    await client.end();
+  }
 }
 
 export async function query<T extends QueryResultRow>(text: string, values: unknown[] = []): Promise<T[]> {
-  const result = await database().query<T>(text, values);
+  const hyperdriveUrl = hyperdriveConnectionString();
+  const result = hyperdriveUrl
+    ? await withHyperdriveClient(hyperdriveUrl, (client) => client.query<T>(text, values))
+    : await database().query<T>(text, values);
   return result.rows;
 }
 
-export async function transaction<T>(run: (client: PoolClient) => Promise<T>): Promise<T> {
+export async function transaction<T>(run: (client: DatabaseClient) => Promise<T>): Promise<T> {
+  const hyperdriveUrl = hyperdriveConnectionString();
+  if (hyperdriveUrl) {
+    return withHyperdriveClient(hyperdriveUrl, async (client) => {
+      await client.query("BEGIN");
+      try {
+        const value = await run(client);
+        await client.query("COMMIT");
+        return value;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      }
+    });
+  }
+
   const client = await database().connect();
   try {
     await client.query("BEGIN");

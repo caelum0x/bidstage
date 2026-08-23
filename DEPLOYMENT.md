@@ -90,7 +90,18 @@ continues to enforce the exact per-user and per-window limits.
 
 ## 4. Configure Worker secrets
 
-Wrangler prompts for each value without writing it to source:
+The first deployment creates the Worker and uploads its secrets in one request.
+Create the ignored local file, restrict its permissions, and fill every value:
+
+```text
+cp .secrets.production.example .secrets.production
+chmod 600 .secrets.production
+```
+
+`bun run deploy:worker` checks the file without printing its values and passes it
+to Wrangler through `--secrets-file`. Wrangler refuses the upload when a secret
+declared in `wrangler.jsonc` is missing. For later rotation, Wrangler prompts for
+one value without writing it to source:
 
 ```text
 bunx wrangler secret put CREEM_API_KEY
@@ -155,7 +166,9 @@ SMOKE_BASE_URL=https://bidstage.app bun run smoke:http
 
 Run these commands in order from a clean `main` checkout. Stop at the first
 failure. The final smoke test must run against the deployed origin, not a local
-development server.
+development server. The production preflight blocks Next.js 16.3.0 and a missing
+Hyperdrive binding. Update the framework to the vendor's patched 16.3 release
+before the first upload.
 
 The accepted artifact contains `.open-next/worker.js` plus immutable assets in
 `.open-next/assets`. The current dry run is approximately 5.9 MiB before gzip

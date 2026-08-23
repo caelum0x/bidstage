@@ -1,8 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import type { PoolClient } from "pg";
 
-import { query, transaction } from "@/lib/db";
+import { query, transaction, type DatabaseClient } from "@/lib/db";
 import { creemEnv } from "@/lib/env";
 import { markPaymentEvent, reversePlacement, settlePlacement } from "@/lib/payment-settlement";
 import { webhookIncidentId } from "@/lib/webhook-incidents";
@@ -61,7 +60,7 @@ function validMode(mode: unknown, testMode: boolean): boolean {
 }
 
 async function settleCheckout(
-  client: PoolClient,
+  client: DatabaseClient,
   event: CreemEvent,
   expectedProductId: string,
   testMode: boolean,
@@ -93,7 +92,7 @@ async function settleCheckout(
 }
 
 async function reverseCreemContribution(
-  client: PoolClient,
+  client: DatabaseClient,
   event: CreemEvent,
   kind: "refund" | "dispute",
   testMode: boolean,

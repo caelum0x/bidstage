@@ -747,6 +747,8 @@ test("manual production verification requires isolated PostgreSQL and deployed H
   assert.match(packageManifest.scripts["test:integration"] ?? "", /BIDSTAGE_REQUIRE_INTEGRATION=1/);
   assert.match(packageManifest.scripts.verify ?? "", /test:integration/);
   assert.match(packageManifest.scripts["smoke:http"] ?? "", /http-smoke/);
+  assert.match(packageManifest.scripts["deploy:worker"] ?? "", /preflight:production/);
+  assert.match(packageManifest.scripts["deploy:worker"] ?? "", /--secrets-file \.secrets\.production/);
 
   const integration = readFileSync(new URL("./integration/database.test.ts", import.meta.url), "utf8");
   assert.match(integration, /databaseName\.includes\("test"\)/);
@@ -767,6 +769,23 @@ test("manual production verification requires isolated PostgreSQL and deployed H
   assert.match(deployment, /TEST_DATABASE_URL=.*bun run test:integration/);
   assert.match(deployment, /SMOKE_BASE_URL=.*bun run smoke:http/);
   assert.equal(existsSync(new URL("../.github/workflows/verify.yml", import.meta.url)), false);
+
+  const wrangler = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+  assert.match(wrangler, /"account_id": "c7a5b49549dcb64f2e258db485c723ca"/);
+  assert.match(wrangler, /"workers_dev": false/);
+  assert.match(wrangler, /"secrets": \{[\s\S]+"required": \[/);
+  assert.match(wrangler, /"MAINTENANCE_SECRET"/);
+
+  const preflight = readFileSync(new URL("../scripts/production-preflight.ts", import.meta.url), "utf8");
+  assert.match(preflight, /BLOCKED_NEXT_VERSIONS = new Set\(\["16\.3\.0"\]\)/);
+  assert.match(preflight, /dedicated HYPERDRIVE binding/);
+  assert.match(preflight, /chmod 600/);
+
+  const database = readFileSync(new URL("../lib/db.ts", import.meta.url), "utf8");
+  assert.match(database, /new Client\(\{ connectionString \}\)/);
+  assert.match(database, /await client\.end\(\)/);
+  assert.match(database, /bidstageNodePool/);
+  assert.doesNotMatch(database, /bidstagePool/);
 });
 
 test("rank history is compact, public, and captured from deterministic open-source ranks", () => {

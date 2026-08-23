@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import type { PoolClient } from "pg";
 
-import { query, transaction } from "@/lib/db";
+import { query, transaction, type DatabaseClient } from "@/lib/db";
 import { verifyDodoWebhookSignature } from "@/lib/dodo";
 import { dodoEnv } from "@/lib/env";
 import { markPaymentEvent, reversePlacement, settlePlacement } from "@/lib/payment-settlement";
@@ -52,7 +51,7 @@ function parseEvent(value: unknown, eventId: string, expectedBusinessId: string)
 }
 
 async function settleDodoPayment(
-  client: PoolClient,
+  client: DatabaseClient,
   event: DodoEvent,
   expectedProductId: string,
 ) {
@@ -90,7 +89,7 @@ async function settleDodoPayment(
 }
 
 async function reverseDodoPayment(
-  client: PoolClient,
+  client: DatabaseClient,
   event: DodoEvent,
   kind: "refund" | "dispute",
 ) {
