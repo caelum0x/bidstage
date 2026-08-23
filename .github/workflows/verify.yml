@@ -1,0 +1,76 @@
+name: Verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: bidstage_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d bidstage_test"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/bidstage_test
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/bidstage_test
+      DATABASE_SSL: "false"
+      APP_URL: https://bidstage.app
+      PAYMENT_PROVIDER: creem
+      CREEM_API_KEY: ci_creem_api_key
+      CREEM_WEBHOOK_SECRET: ci_creem_webhook_secret
+      CREEM_PRODUCT_ID: ci_creem_product
+      CREEM_TEST_MODE: "true"
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      FOUNDER_ACCESS_SECRET: ci-founder-access-secret-32-characters-minimum
+      GITHUB_CLIENT_ID: ci-github-client
+      GITHUB_CLIENT_SECRET: ci-github-secret
+      GITHUB_API_TOKEN: ci-read-only-github-token
+      RATE_LIMIT_SALT: ci-rate-limit-salt-32-characters-minimum
+      MAINTENANCE_SECRET: ci-maintenance-secret-32-characters-minimum
+      WRANGLER_LOG_PATH: ${{ runner.temp }}/wrangler.log
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run test:integration
+      - run: bun run migrate
+      - run: bun run build:worker
+      - run: bunx wrangler deploy --dry-run
+      - name: Smoke production HTTP routes
+        env:
+          SMOKE_BASE_URL: http://127.0.0.1:3000
+        run: |
+          bun run start > "$RUNNER_TEMP/bidstage-next.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:3000/auth/error >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          bun run smoke:http

@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: bidstage
+      POSTGRES_USER: bidstage
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - bidstage-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bidstage -d bidstage"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ..
+    environment:
+      DATABASE_URL: postgresql://bidstage:${POSTGRES_PASSWORD}@postgres:5432/bidstage
+      DATABASE_SSL: "false"
+      APP_URL: ${APP_URL:?set APP_URL}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-creem}
+      CREEM_API_KEY: ${CREEM_API_KEY:-}
+      CREEM_WEBHOOK_SECRET: ${CREEM_WEBHOOK_SECRET:-}
+      CREEM_PRODUCT_ID: ${CREEM_PRODUCT_ID:-}
+      CREEM_TEST_MODE: ${CREEM_TEST_MODE:-true}
+      DODO_PAYMENTS_API_KEY: ${DODO_PAYMENTS_API_KEY:-}
+      DODO_PAYMENTS_WEBHOOK_KEY: ${DODO_PAYMENTS_WEBHOOK_KEY:-}
+      DODO_PAYMENTS_PRODUCT_ID: ${DODO_PAYMENTS_PRODUCT_ID:-}
+      DODO_PAYMENTS_BUSINESS_ID: ${DODO_PAYMENTS_BUSINESS_ID:-}
+      DODO_PAYMENTS_TEST_MODE: ${DODO_PAYMENTS_TEST_MODE:-true}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?set TURNSTILE_SITE_KEY}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:?set TURNSTILE_SECRET_KEY}
+      FOUNDER_ACCESS_SECRET: ${FOUNDER_ACCESS_SECRET:?set FOUNDER_ACCESS_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:?set GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:?set GITHUB_CLIENT_SECRET}
+      GITHUB_API_TOKEN: ${GITHUB_API_TOKEN:?set GITHUB_API_TOKEN}
+      RATE_LIMIT_SALT: ${RATE_LIMIT_SALT:?set RATE_LIMIT_SALT}
+      MAINTENANCE_SECRET: ${MAINTENANCE_SECRET:?set MAINTENANCE_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  bidstage-postgres:

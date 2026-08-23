@@ -1,0 +1,60 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bidstage",
+  "main": "custom-worker.ts",
+  "compatibility_date": "2026-08-23",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "ratelimits": [
+    {
+      "name": "EDGE_WRITE_RATE_LIMITER",
+      "namespace_id": "284712001",
+      "simple": {
+        "limit": 20,
+        "period": 60
+      }
+    }
+  ],
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "bidstage"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "bidstage.app",
+      "custom_domain": true
+    }
+  ],
+  "placement": {
+    "mode": "smart"
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": false
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.05
+    }
+  },
+  "triggers": {
+    "crons": ["15 * * * *"]
+  },
+  "vars": {
+    "APP_URL": "https://bidstage.app",
+    "PAYMENT_PROVIDER": "creem",
+    "CREEM_TEST_MODE": "false"
+  }
+
+  // Add the HYPERDRIVE binding after provisioning it from the Neon connection
+  // string. DEPLOYMENT.md contains the exact command and configuration block.
+  // Until then, the Worker can use a DATABASE_URL secret directly.
+}
