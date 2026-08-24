@@ -7,7 +7,7 @@ export default function NotFound() {
         <strong>404</strong>
         <h1>This ledger row does not exist.</h1>
         <p>The listing, receipt, support case, or page reference may be incorrect or no longer public.</p>
-        <a href="/#board">View active products</a>
+        <a href="/#board">View active projects</a>
       </section>
       <div className="noise" aria-hidden="true" />
     </main>

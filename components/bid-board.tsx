@@ -306,7 +306,7 @@ export function BidBoard({
             <div className="pricing-callout" aria-label="Upvote pricing">
               <span>Pricing</span>
               <div className="pricing-callout-head"><strong>${UPVOTE_DOLLARS}</strong><em>per upvote</em></div>
-              <p>Buy any number of upvotes — 1 for ${UPVOTE_DOLLARS}, 20 for $100, 200 for $1,000, up to {usd0.format(MAX_BID_CENTS / 100)}. Each upvote adds ${UPVOTE_DOLLARS} to a project&rsquo;s public rank. It&rsquo;s a one-time purchase, not a subscription. Each ${UPVOTE_DOLLARS} upvote includes a {PLATFORM_FEE_PERCENT}% bidstage platform fee.</p>
+              <p>Buy any number of upvotes — 1 for ${UPVOTE_DOLLARS}, 20 for $100, 200 for $1,000, up to {usd0.format(MAX_BID_CENTS / 100)}. Each upvote adds ${UPVOTE_DOLLARS} to a project&rsquo;s public rank. It&rsquo;s a one-time purchase, not a subscription. Each ${UPVOTE_DOLLARS} upvote includes a {PLATFORM_FEE_PERCENT}% Bidstage platform fee.</p>
             </div>
             <div className="proof-row">
               <span><strong>{board ? board.totals.entries : "—"}</strong> verified projects</span>
@@ -372,7 +372,7 @@ export function BidBoard({
                 <span>{upvoteCount.toLocaleString("en-US")} upvote{upvoteCount === 1 ? "" : "s"} × ${UPVOTE_DOLLARS}</span>
                 <strong>{usd0.format(amountCents / 100)}</strong>
               </div>
-              <p className="upvote-fee">Includes {usd0.format(feeCents / 100)} ({PLATFORM_FEE_PERCENT}%) bidstage platform fee. Max {MAX_UPVOTES.toLocaleString("en-US")} upvotes ({usd0.format(MAX_BID_CENTS / 100)}).</p>
+              <p className="upvote-fee">Includes {usd0.format(feeCents / 100)} ({PLATFORM_FEE_PERCENT}%) Bidstage platform fee. Max {MAX_UPVOTES.toLocaleString("en-US")} upvotes ({usd0.format(MAX_BID_CENTS / 100)}).</p>
             </fieldset>
             <RankQuotePanel
               quote={currentQuote}
@@ -489,7 +489,7 @@ function RankQuotePanel({
           <div className="price-ladder">
             <div><span>Category leader now</span><strong>{cents(quote.categoryLeaderCents)}</strong></div>
             <div className="projected"><span>Your settled total</span><strong>{cents(quote.projectedTotalCents)}</strong></div>
-            <div><span>Current product total</span><strong>{cents(quote.currentTotalCents)}</strong></div>
+            <div><span>Current project total</span><strong>{cents(quote.currentTotalCents)}</strong></div>
           </div>
           {quote.projectedCategoryRank === 1 ? (
             <p className="quote-verdict">This many upvotes reaches the category lead at this ledger snapshot.</p>

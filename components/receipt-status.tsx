@@ -131,7 +131,7 @@ export function ReceiptStatus({ reference }: { reference: string }) {
           <div className="receipt-state receipt-pending">
             <span className="settlement-stamp"><i /> Awaiting signed event</span>
             <h1>Payment returned.<br /><em>Settlement is pending.</em></h1>
-            <p>{providerName(receipt.paymentProvider)} is confirming the payment. Bidstage will not move the product until the signed webhook matches the approved amount and checkout.</p>
+            <p>{providerName(receipt.paymentProvider)} is confirming the payment. Bidstage will not move the project until the signed webhook matches the approved amount and checkout.</p>
             <ReceiptFacts receipt={receipt} />
           </div>
         ) : adjusted && receipt ? (
