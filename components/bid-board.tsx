@@ -3,7 +3,7 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { COUNTRY_CODES, countryName, type CountryCode } from "@/lib/countries";
-import { CATEGORIES, MIN_BID_CENTS, type Category, type ProductKind } from "@/lib/market";
+import { CATEGORIES, MAX_BID_CENTS, MAX_UPVOTES, PLATFORM_FEE_BPS, UPVOTE_PRICE_CENTS, platformFeeCents, type Category, type ProductKind } from "@/lib/market";
 
 type Listing = {
   rank: string; slug: string; title: string; destination: string; category: Category;
@@ -50,8 +50,13 @@ type PlacementProject = {
 };
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+const usd0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 const cents = (value: string | number) => money.format(Number(value) / 100);
+const UPVOTE_DOLLARS = UPVOTE_PRICE_CENTS / 100; // $5 per upvote
+const PLATFORM_FEE_PERCENT = PLATFORM_FEE_BPS / 100; // 20%
+// Preset upvote quantities: 1 / 5 / 20 / 100 / 200 upvotes = $5 / $25 / $100 / $500 / $1,000.
+const UPVOTE_PRESETS = [1, 5, 20, 100, 200] as const;
 const repositoryVerificationLabel = (method: Listing["github_verification_method"]) => method === "repository_file"
   ? "Repository authorized"
   : method === "personal_owner" ? "Owner verified" : "Legacy verification";
@@ -81,7 +86,7 @@ export function BidBoard({
   const [fundingUrl, setFundingUrl] = useState("");
   const [contributionUrl, setContributionUrl] = useState("");
   const [contributionNote, setContributionNote] = useState("");
-  const [amount, setAmount] = useState(String(MIN_BID_CENTS / 100));
+  const [quantity, setQuantity] = useState("1");
   const [quote, setQuote] = useState<CurrentQuote>();
   const [quoteError, setQuoteError] = useState<string>();
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -161,12 +166,14 @@ export function BidBoard({
     if (response.ok) setFounder(null);
   }
 
-  const amountCents = Math.round(Number(amount) * 100);
+  const upvoteCount = Math.max(0, Math.floor(Number(quantity) || 0));
+  const amountCents = upvoteCount * UPVOTE_PRICE_CENTS;
+  const feeCents = platformFeeCents(amountCents);
   const quoteReady =
     destination.trim().length >= 3 &&
     Number.isSafeInteger(amountCents) &&
-    amountCents >= MIN_BID_CENTS &&
-    amountCents <= 5_000_000;
+    amountCents >= UPVOTE_PRICE_CENTS &&
+    amountCents <= MAX_BID_CENTS;
   const quoteRequestKey = `${destination.trim()}|${bidCategory}|${productKind}|${amountCents}`;
   const currentQuote = quote?.requestKey === quoteRequestKey ? quote : undefined;
 
@@ -281,7 +288,7 @@ export function BidBoard({
     <main id="main-content">
       <nav className="nav shell" aria-label="Primary navigation">
         <a className="brand" href="#top" aria-label="Bidstage home"><span className="brand-mark">B</span>bidstage</a>
-        <div className="nav-links"><a href="#board">Projects</a><a href="/categories">Categories</a><a href="/bids">How bidding works</a><a href="/countries">Countries</a><a href="/opportunities">Opportunities</a><a href="/contributors">Contributors</a><a href="#how">How it works</a><a href="/legal/rules">Rules</a></div>
+        <div className="nav-links"><a href="#board">Projects</a><a href="/categories">Categories</a><a href="/bids">Pricing</a><a href="/countries">Countries</a><a href="/opportunities">Opportunities</a><a href="/contributors">Contributors</a><a href="#how">How it works</a><a href="/legal/rules">Rules</a></div>
         <div className="nav-account">
           <span className="live-pill"><i /> live ledger</span>
           {founder === undefined ? null : founder ? (
@@ -295,25 +302,30 @@ export function BidBoard({
         <div className="hero-grid">
           <div>
             <h1>Put useful code<br /><em>where people look.</em></h1>
-            <p className="lede">A sponsored discovery board for public, OSI-licensed projects. Repository ownership, placement spend, position changes, and outbound visits stay visible.</p>
+            <p className="lede">Bidstage is sponsored discovery for open source. Buy upvotes to boost a verified, OSI-licensed project up the public board — every purchase, position change, and outbound visit stays on the record.</p>
+            <div className="pricing-callout" aria-label="Upvote pricing">
+              <span>Pricing</span>
+              <div className="pricing-callout-head"><strong>${UPVOTE_DOLLARS}</strong><em>per upvote</em></div>
+              <p>Buy any number of upvotes — 1 for ${UPVOTE_DOLLARS}, 20 for $100, 200 for $1,000, up to {usd0.format(MAX_BID_CENTS / 100)}. Each upvote adds ${UPVOTE_DOLLARS} to a project&rsquo;s public rank. It&rsquo;s a one-time purchase, not a subscription. Each ${UPVOTE_DOLLARS} upvote includes a {PLATFORM_FEE_PERCENT}% bidstage platform fee.</p>
+            </div>
             <div className="proof-row">
               <span><strong>{board ? board.totals.entries : "—"}</strong> verified projects</span>
-              <span><strong>{board ? cents(board.totals.volume_cents) : "—"}</strong> placement spend</span>
+              <span><strong>{board ? cents(board.totals.volume_cents) : "—"}</strong> upvote spend</span>
               <span><strong>{board ? compact.format(Number(board.totals.clicks)) : "—"}</strong> verified visits</span>
             </div>
             <div className="money-boundary" aria-label="How money moves on Bidstage">
-              <article><span>Sponsored placement</span><strong>Paid to Bidstage</strong><p>A one-time budget buys a clearly labeled board position. It never becomes project or contributor funding.</p></article>
+              <article><span>Upvotes</span><strong>Paid to Bidstage</strong><p>Each ${UPVOTE_DOLLARS} upvote buys a clearly labeled boost to a project&rsquo;s board position. It is Bidstage advertising revenue — never project or contributor funding.</p></article>
               <article><span>Project funding</span><strong>Paid to maintainers</strong><p>Maintainer-published links route support to GitHub Sponsors or Open Collective. Bidstage does not hold those funds.</p></article>
             </div>
           </div>
 
           <form className="bid-card" onSubmit={submit}>
-            <div className="card-cap"><span>{placementProject ? "Add placement" : "List a project"}</span><span>One-time placement</span></div>
+            <div className="card-cap"><span>{placementProject ? "Add upvotes" : "List a project"}</span><span>${UPVOTE_DOLLARS} per upvote</span></div>
             {placementProject ? (
               <div className="repeat-placement-slip">
                 <span>Existing active project</span>
                 <strong>{placementProject.title}</strong>
-                <p>Current placement total: {cents(placementProject.currentTotalCents)}. Project identity stays fixed; this checkout adds one signed ledger entry after settlement.</p>
+                <p>Current rank total: {cents(placementProject.currentTotalCents)}. Project identity stays fixed; buying more upvotes adds one signed ledger entry after settlement.</p>
                 <a href="/#top">List a different project</a>
               </div>
             ) : (
@@ -338,17 +350,37 @@ export function BidBoard({
               <label>GitHub issue or contribution page<input name="contributionUrl" type="url" value={contributionUrl} onChange={(event) => setContributionUrl(event.target.value)} placeholder="https://github.com/you/project/issues/42" autoCapitalize="none" autoCorrect="off" disabled={Boolean(placementProject)} required={Boolean(contributionNote.trim())} /></label>
               <label>What help is needed?<input name="contributionNote" minLength={10} maxLength={180} value={contributionNote} onChange={(event) => setContributionNote(event.target.value)} placeholder="Help reproduce and fix Windows installation failures." disabled={Boolean(placementProject)} required={Boolean(contributionUrl.trim())} /></label>
             </fieldset>
-            <div className="form-row">
-              <label>Category<select name="category" value={bidCategory} onChange={(event) => setBidCategory(event.target.value as Category)} disabled={Boolean(placementProject)}>{CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
-              <label>Placement budget<div className="money-input"><span>$</span><input name="amount" type="number" min={MIN_BID_CENTS / 100} max={50_000} step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} required /></div></label>
-            </div>
+            <label>Category<select name="category" value={bidCategory} onChange={(event) => setBidCategory(event.target.value as Category)} disabled={Boolean(placementProject)}>{CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+            <fieldset className="upvote-picker">
+              <legend>Upvotes <span>${UPVOTE_DOLLARS} each</span></legend>
+              <p>Choose how many upvotes to buy. Each one adds ${UPVOTE_DOLLARS} to this project&rsquo;s public rank — a one-time purchase, not a subscription.</p>
+              <div className="upvote-presets" role="group" aria-label="Preset upvote quantities">
+                {UPVOTE_PRESETS.map((preset) => (
+                  <button
+                    type="button"
+                    key={preset}
+                    aria-pressed={upvoteCount === preset}
+                    onClick={() => setQuantity(String(preset))}
+                  >
+                    <strong>{preset.toLocaleString("en-US")}</strong>
+                    <span>{usd0.format(preset * UPVOTE_DOLLARS)}</span>
+                  </button>
+                ))}
+              </div>
+              <label className="upvote-custom">Custom quantity<input name="quantity" type="number" inputMode="numeric" min={1} max={MAX_UPVOTES} step={1} value={quantity} onChange={(event) => setQuantity(event.target.value)} required /></label>
+              <div className="upvote-total" aria-live="polite">
+                <span>{upvoteCount.toLocaleString("en-US")} upvote{upvoteCount === 1 ? "" : "s"} × ${UPVOTE_DOLLARS}</span>
+                <strong>{usd0.format(amountCents / 100)}</strong>
+              </div>
+              <p className="upvote-fee">Includes {usd0.format(feeCents / 100)} ({PLATFORM_FEE_PERCENT}%) bidstage platform fee. Max {MAX_UPVOTES.toLocaleString("en-US")} upvotes ({usd0.format(MAX_BID_CENTS / 100)}).</p>
+            </fieldset>
             <RankQuotePanel
               quote={currentQuote}
               loading={quoteLoading}
               error={quoteError}
               ready={quoteReady}
               onRefresh={() => setQuoteRefresh((value) => value + 1)}
-              onSetLeaderBid={(value) => setAmount(formatDollarInput(value))}
+              onSetLeaderBid={(value) => setQuantity(String(upvotesForCents(value)))}
             />
             <label className="check"><input name="rules" type="checkbox" required /><span>I own this repository, may promote its destination, and accept the <a href="/legal/rules">board rules</a>.</span></label>
             {turnstileSiteKey ? (
@@ -365,8 +397,8 @@ export function BidBoard({
               </>
             ) : <p className="form-error" role="alert">Checkout verification is not configured.</p>}
             {checkoutError ? <p className="form-error" role="alert">{checkoutError}</p> : null}
-            <button className="primary" type="submit" disabled={submitting || placementLoading || Boolean(placementError) || !currentQuote || !turnstileSiteKey || !founder || !repositoryUrl.trim()}>{submitting ? "Opening secure checkout…" : placementProject ? "Continue to placement checkout" : "Continue to verified checkout"}</button>
-            <p className="fine">This payment is only for sponsored placement. Rank changes after the payment provider confirms settlement through a signed event.</p>
+            <button className="primary" type="submit" disabled={submitting || placementLoading || Boolean(placementError) || !currentQuote || !turnstileSiteKey || !founder || !repositoryUrl.trim()}>{submitting ? "Opening secure checkout…" : placementProject ? "Continue to upvote checkout" : "Continue to verified checkout"}</button>
+            <p className="fine">This payment buys upvotes — labeled sponsored placement paid to Bidstage. Rank changes after the payment provider confirms settlement through a signed event.</p>
           </form>
         </div>
       </section>
@@ -401,7 +433,7 @@ export function BidBoard({
         <div className="section-title"><div><span className="kicker">03 / mechanics</span><h2>Simple enough to audit.</h2></div></div>
         <div className="steps">
           <article><span>01</span><h3>Verify the source</h3><p>Sign in as the repository owner. Bidstage checks that the repository is public and its SPDX license appears in OSI’s approved catalog.</p></article>
-          <article><span>02</span><h3>Buy labeled placement</h3><p>Your one-time placement budget is the exact checkout amount. Returning projects add to their public, verified placement total.</p></article>
+          <article><span>02</span><h3>Buy upvotes at ${UPVOTE_DOLLARS} each</h3><p>Every upvote adds ${UPVOTE_DOLLARS} to the project&rsquo;s public, verified rank total. It&rsquo;s a one-time purchase — buy more to climb higher, with no subscription.</p></article>
           <article><span>03</span><h3>Fund work directly</h3><p>Project funding stays separate from ranking. Maintainers may publish a canonical GitHub Sponsors or Open Collective link without sending those funds through Bidstage.</p></article>
         </div>
       </section>
@@ -435,7 +467,7 @@ function RankQuotePanel({
       </div>
 
       {!ready ? (
-        <p className="quote-prompt">Enter a destination and placement budget to price your position against the settled ledger.</p>
+        <p className="quote-prompt">Enter a destination and choose how many upvotes to buy to price your position against the settled ledger.</p>
       ) : loading ? (
         <div className="quote-loading"><span className="loader" /><span>Calculating position…</span></div>
       ) : error ? (
@@ -460,10 +492,10 @@ function RankQuotePanel({
             <div><span>Current product total</span><strong>{cents(quote.currentTotalCents)}</strong></div>
           </div>
           {quote.projectedCategoryRank === 1 ? (
-            <p className="quote-verdict">This placement budget reaches the category lead at this ledger snapshot.</p>
+            <p className="quote-verdict">This many upvotes reaches the category lead at this ledger snapshot.</p>
           ) : (
             <button className="leader-button" type="button" onClick={() => onSetLeaderBid(quote.minimumContributionToLeadCents)}>
-              Set placement budget to reach #1 · {cents(quote.minimumContributionToLeadCents)}
+              Buy {upvotesForCents(quote.minimumContributionToLeadCents).toLocaleString("en-US")} upvotes to reach #1 · {cents(quote.minimumContributionToLeadCents)}
             </button>
           )}
           {quote.requiresReview ? <p className="quote-review">New destinations appear only after payment settlement and safety review.</p> : null}
@@ -474,9 +506,9 @@ function RankQuotePanel({
   );
 }
 
-function formatDollarInput(amountCents: number): string {
-  const value = amountCents / 100;
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+function upvotesForCents(amountCents: number): number {
+  const upvotes = Math.ceil(amountCents / UPVOTE_PRICE_CENTS);
+  return Math.min(MAX_UPVOTES, Math.max(1, upvotes));
 }
 
 function formatQuoteTime(value: string): string {

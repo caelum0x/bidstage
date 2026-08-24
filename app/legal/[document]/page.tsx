@@ -42,10 +42,11 @@ const documents = {
   },
   terms: {
     title: "Terms of service",
-    summary: "Bidstage provides one-time sponsored placement for verified open-source projects.",
+    summary: "Bidstage sells upvotes — one-time sponsored placement — for verified open-source projects at $5.00 each.",
     sections: [
-      { title: "Service", body: "A placement payment buys position under the ranking rules shown before checkout. The charge does not fund the listed project or its contributors." },
-      { title: "Position changes", body: "Another project can move ahead by adding more settled placement spend. Bidstage does not guarantee rank duration or any traffic outcome." },
+      { title: "Service", body: "Bidstage is the seller and merchant of record for upvotes. Buying upvotes pays Bidstage to boost a project's position under the ranking rules shown before checkout. The charge does not fund the listed project or its contributors, and Bidstage does not pay out any part of it to project owners." },
+      { title: "Pricing and platform fee", body: "Upvotes cost $5.00 each. You may buy any quantity from 1 upvote ($5.00) up to 10,000 upvotes ($50,000.00) per checkout. The price is a one-time charge, not a subscription, shown as a live total before payment. Each $5.00 upvote is Bidstage advertising revenue and includes an inclusive 20% Bidstage platform fee; that fee is already contained in the $5.00 unit price and is never added on top." },
+      { title: "Position changes", body: "Another project can move ahead by buying more settled upvotes. Bidstage does not guarantee rank duration or any traffic outcome." },
       { title: "Account authority", body: "You must control the signed-in GitHub account and have authority to represent the submitted repository and destination. You remain responsible for project content, repository licensing, and links you publish." },
       { title: "Refunds and disputes", body: "The refund policy governs duplicate charges, technical failures, and other refund requests. A refund or payment dispute creates a negative public ledger entry and may remove the listing's remaining sponsored value." },
     ],

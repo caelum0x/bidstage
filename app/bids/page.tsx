@@ -1,11 +1,14 @@
 import { connection } from "next/server";
 
 import { query } from "@/lib/db";
-import { MIN_BID_CENTS } from "@/lib/market";
+import { MAX_BID_CENTS, MAX_UPVOTES, PLATFORM_FEE_BPS, UPVOTE_PRICE_CENTS } from "@/lib/market";
+
+const UPVOTE_DOLLARS = UPVOTE_PRICE_CENTS / 100;
+const PLATFORM_FEE_PERCENT = PLATFORM_FEE_BPS / 100;
 
 export const metadata = {
-  title: "How project bidding works",
-  description: "See how verified open-source projects buy sponsored placement and move through Bidstage's public ledger.",
+  title: "Pricing — $5 per upvote",
+  description: "Upvotes cost $5.00 each. Buy any quantity to boost a verified open-source project up Bidstage's public, settled ledger. One-time purchase, not a subscription.",
 };
 
 type BidTotalsRow = {
@@ -79,13 +82,13 @@ export default async function BidsPage() {
       <header className="bid-guide-hero shell">
         <div className="bid-guide-heading">
           <span>Sponsored ranking for verified open source</span>
-          <h1>How project<br /><em>bidding works.</em></h1>
-          <p>A maintainer chooses a one-time placement budget. Bidstage adds that amount to the project only after the payment provider sends a valid signed settlement event. The public board ranks active projects by net settled placement total.</p>
-          <div className="bid-guide-actions"><a href="/#top">Start a placement</a><a href="/account">Add to an existing project</a></div>
+          <h1>${UPVOTE_DOLLARS} per upvote.<br /><em>Buy any amount.</em></h1>
+          <p>Upvotes cost ${UPVOTE_DOLLARS}.00 each. Buy any quantity — 1 for ${UPVOTE_DOLLARS}, 20 for $100, 200 for $1,000, up to {money.format(MAX_BID_CENTS / 100)} ({MAX_UPVOTES.toLocaleString("en-US")} upvotes). Each upvote adds ${UPVOTE_DOLLARS} to the project only after the payment provider sends a valid signed settlement event. The public board ranks active projects by net settled total. It&rsquo;s a one-time purchase, not a subscription.</p>
+          <div className="bid-guide-actions"><a href="/#top">Buy upvotes</a><a href="/account">Add to an existing project</a></div>
         </div>
         <aside className="bid-boundary-note">
-          <strong>Placement is advertising.</strong>
-          <p>Your payment buys a labeled position on Bidstage. It does not fund the project, guarantee traffic, or affect contributor ordering.</p>
+          <strong>Upvotes are advertising.</strong>
+          <p>Each ${UPVOTE_DOLLARS} upvote buys a labeled position on Bidstage and is Bidstage revenue — including a {PLATFORM_FEE_PERCENT}% platform fee. It does not fund the project, guarantee traffic, or affect contributor ordering.</p>
         </aside>
       </header>
 
@@ -94,21 +97,21 @@ export default async function BidsPage() {
           <div className="bid-live-heading"><div><span>Current public ledger</span><h2 id="bid-live-heading">The board uses settled records.</h2></div>{data ? null : <p role="status">Live totals are unavailable.</p>}</div>
           <dl className="bid-guide-metrics">
             <div><dt>Active projects</dt><dd>{data?.totals.active_projects ?? "—"}</dd></div>
-            <div><dt>Net placement volume</dt><dd>{data ? money.format(Number(data.totals.placement_cents) / 100) : "—"}</dd></div>
-            <div><dt>Verified placements</dt><dd>{data?.totals.placement_count ?? "—"}</dd></div>
-            <div><dt>Minimum placement</dt><dd>{money.format(MIN_BID_CENTS / 100)}</dd></div>
+            <div><dt>Net upvote volume</dt><dd>{data ? money.format(Number(data.totals.placement_cents) / 100) : "—"}</dd></div>
+            <div><dt>Verified purchases</dt><dd>{data?.totals.placement_count ?? "—"}</dd></div>
+            <div><dt>Price per upvote</dt><dd>{money.format(UPVOTE_PRICE_CENTS / 100)}</dd></div>
           </dl>
 
           <div className="bid-formula-slip" aria-label="Bidstage ranking formula">
             <span>Project accounting rule</span>
-            <div><strong>current net total</strong><i>+</i><strong>signed placement</strong><i>=</i><strong>projected total</strong></div>
+            <div><strong>current net total</strong><i>+</i><strong>upvotes × ${UPVOTE_DOLLARS}</strong><i>=</i><strong>projected total</strong></div>
             <p>Refund and dispute reversals subtract from the same public ledger. Bidstage uses net settled totals for rank.</p>
           </div>
 
           <ol className="bid-mechanics">
             <li><span>01</span><h3>Verify ownership</h3><p>Sign in with GitHub. Bidstage checks repository ownership or the committed organization authorization file, then confirms an OSI-approved license.</p></li>
-            <li><span>02</span><h3>Read the quote</h3><p>Enter a placement budget. The server calculates projected category and overall positions from the settled ledger.</p></li>
-            <li><span>03</span><h3>Complete payment</h3><p>The configured provider collects the exact amount. Returning from checkout does not change rank.</p></li>
+            <li><span>02</span><h3>Choose upvotes</h3><p>Pick how many upvotes to buy at ${UPVOTE_DOLLARS} each. The server calculates projected category and overall positions from the settled ledger.</p></li>
+            <li><span>03</span><h3>Complete payment</h3><p>The configured provider collects the exact amount — a one-time charge, not a subscription. Returning from checkout does not change rank.</p></li>
             <li><span>04</span><h3>Publish the entry</h3><p>A signed webhook settles the payment. New projects enter review; active projects receive another ledger entry.</p></li>
           </ol>
         </div>

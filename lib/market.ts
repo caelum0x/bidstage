@@ -12,6 +12,20 @@ export const PRODUCT_KINDS = ["commercial", "open_source"] as const;
 export type ProductKind = (typeof PRODUCT_KINDS)[number];
 export const MIN_BID_CENTS = 500;
 export const MAX_BID_CENTS = 5_000_000;
+// Upvote tokens are the paid product: a fixed $5.00 each. Cents stay the backend
+// source of truth, so amountCents = quantity * UPVOTE_PRICE_CENTS.
+export const UPVOTE_PRICE_CENTS = MIN_BID_CENTS; // $5.00 per upvote
+export const MAX_UPVOTES = MAX_BID_CENTS / UPVOTE_PRICE_CENTS; // 10,000 upvotes = $50,000
+// Bidstage is the merchant of record and sole seller of upvotes. Every purchase
+// is 100% Bidstage advertising revenue; no funds are paid out to project owners.
+// The platform fee is disclosed as INCLUSIVE in the $5 price (it does not inflate
+// the sticker price) so the take-rate stays transparent for receipts and reporting.
+export const PLATFORM_FEE_BPS = 2000; // 20% bidstage platform fee, inclusive
+
+/** Inclusive bidstage platform fee for a settled amount, in whole cents. */
+export function platformFeeCents(amountCents: number): number {
+  return Math.round((amountCents * PLATFORM_FEE_BPS) / 10000);
+}
 
 export type CheckoutInput = {
   title: string;
@@ -80,7 +94,7 @@ export function parseCheckoutInput(value: unknown): CheckoutInput {
   if (!CATEGORIES.includes(body.category as Category)) throw new MarketInputError("Choose a valid category");
   const amountCents = body.amountCents;
   if (!Number.isSafeInteger(amountCents) || Number(amountCents) < MIN_BID_CENTS || Number(amountCents) > MAX_BID_CENTS) {
-    throw new MarketInputError(`Bid must be between $${MIN_BID_CENTS / 100} and $${MAX_BID_CENTS / 100}`);
+    throw new MarketInputError(`Buy between 1 and ${MAX_UPVOTES.toLocaleString("en-US")} upvotes ($${MIN_BID_CENTS / 100}–$${(MAX_BID_CENTS / 100).toLocaleString("en-US")})`);
   }
   if (body.acceptedRules !== true) throw new MarketInputError("Accept the marketplace rules before checkout");
   if (body.productKind !== "open_source") {
@@ -118,7 +132,7 @@ export function parseRankQuoteInput(value: unknown): RankQuoteInput {
     Number(body.amountCents) > MAX_BID_CENTS
   ) {
     throw new MarketInputError(
-      `Contribution must be between $${MIN_BID_CENTS / 100} and $${MAX_BID_CENTS / 100}`,
+      `Buy between 1 and ${MAX_UPVOTES.toLocaleString("en-US")} upvotes ($${MIN_BID_CENTS / 100}–$${(MAX_BID_CENTS / 100).toLocaleString("en-US")})`,
     );
   }
   return {
