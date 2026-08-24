@@ -20,6 +20,9 @@ export async function verifyCheckoutHuman(token: unknown, remoteIp?: string): Pr
   }
 
   const env = serverEnv();
+  if (!env.checkoutEnabled || !env.turnstileSecretKey) {
+    throw new HumanVerificationError("Checkout verification is not available yet.");
+  }
   const form = new FormData();
   form.set("secret", env.turnstileSecretKey);
   form.set("response", token);

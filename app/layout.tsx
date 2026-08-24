@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     template: "%s | Bidstage",
   },
   description: "A transparent sponsored board for owner-verified, OSI-licensed open-source projects.",
+  icons: { icon: "/icon.svg" },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
@@ -15,11 +16,13 @@ export const metadata: Metadata = {
     title: "Bidstage — sponsored discovery for open source",
     description: "A transparent sponsored board for owner-verified, OSI-licensed open-source projects.",
     url: "/",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Bidstage — open-source projects, ranked in public" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "Bidstage — sponsored discovery for open source",
     description: "A transparent sponsored board for owner-verified, OSI-licensed open-source projects.",
+    images: ["/twitter-image"],
   },
   robots: {
     index: true,

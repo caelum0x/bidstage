@@ -6,11 +6,12 @@ type DatabaseEnv = {
 type ServerEnv = {
   appUrl: string;
   paymentProvider: "creem" | "dodo";
-  turnstileSecretKey: string;
+  checkoutEnabled: boolean;
+  turnstileSecretKey?: string;
   founderAccessSecret: string;
   githubClientId: string;
   githubClientSecret: string;
-  githubApiToken: string;
+  githubApiToken?: string;
   rateLimitSalt: string;
   maintenanceSecret: string;
 };
@@ -70,11 +71,12 @@ export function serverEnv(): ServerEnv {
   cached = {
     appUrl: appUrl.origin,
     paymentProvider,
-    turnstileSecretKey: required("TURNSTILE_SECRET_KEY"),
+    checkoutEnabled: String(process.env.CHECKOUT_ENABLED) === "true",
+    turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY?.trim() || undefined,
     founderAccessSecret,
     githubClientId: required("GITHUB_CLIENT_ID"),
     githubClientSecret: required("GITHUB_CLIENT_SECRET"),
-    githubApiToken: required("GITHUB_API_TOKEN"),
+    githubApiToken: process.env.GITHUB_API_TOKEN?.trim() || undefined,
     rateLimitSalt,
     maintenanceSecret,
   };

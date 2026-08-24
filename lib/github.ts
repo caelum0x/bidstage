@@ -90,12 +90,13 @@ export async function verifyAuthorizedPublicRepository(
   githubUserId: number,
 ): Promise<VerifiedRepository> {
   const { owner, name } = repositoryParts(rawUrl);
-  const headers = {
+  const apiToken = serverEnv().githubApiToken;
+  const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
-    Authorization: `Bearer ${serverEnv().githubApiToken}`,
     "User-Agent": "Bidstage",
     "X-GitHub-Api-Version": "2022-11-28",
   };
+  if (apiToken) headers.Authorization = `Bearer ${apiToken}`;
   const response = await fetch(
     `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(name)}`,
     {

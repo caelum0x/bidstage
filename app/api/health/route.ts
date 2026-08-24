@@ -11,7 +11,7 @@ export async function GET() {
   const started = Date.now();
   try {
     const env = serverEnv();
-    assertPlacementPaymentConfigured(env.paymentProvider);
+    if (env.checkoutEnabled) assertPlacementPaymentConfigured(env.paymentProvider);
     const edgeRateLimit = edgeRateLimitMode();
     if (edgeRateLimit === "missing") throw new Error("Worker rate-limit binding is missing");
     await query("SELECT 1");
@@ -23,6 +23,7 @@ export async function GET() {
         database: "ready",
         edge_rate_limit: edgeRateLimit,
         maintenance,
+        checkout: env.checkoutEnabled ? "ready" : "disabled",
         payment_provider: env.paymentProvider,
         latency_ms: Date.now() - started,
       },

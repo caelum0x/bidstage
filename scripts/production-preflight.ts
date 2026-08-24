@@ -2,14 +2,11 @@ import { existsSync, readFileSync, statSync } from "node:fs";
 
 const BLOCKED_NEXT_VERSIONS = new Set(["16.3.0"]);
 const REQUIRED_SECRETS = [
-  "CREEM_API_KEY",
-  "CREEM_WEBHOOK_SECRET",
-  "CREEM_PRODUCT_ID",
-  "TURNSTILE_SECRET_KEY",
   "FOUNDER_ACCESS_SECRET",
   "GITHUB_CLIENT_ID",
   "GITHUB_CLIENT_SECRET",
-  "GITHUB_API_TOKEN",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
   "RATE_LIMIT_SALT",
   "MAINTENANCE_SECRET",
 ] as const;
@@ -55,6 +52,7 @@ const turnstileSiteKey = wrangler.match(/"TURNSTILE_SITE_KEY"\s*:\s*"([^"]+)"/)?
 if (!turnstileSiteKey || /^1x0{10,}/.test(turnstileSiteKey)) {
   fail("wrangler.jsonc needs the production TURNSTILE_SITE_KEY public variable");
 }
+const checkoutEnabled = wrangler.match(/"CHECKOUT_ENABLED"\s*:\s*"([^"]+)"/)?.[1] === "true";
 
 const secretFile = ".secrets.production";
 if (!existsSync(secretFile)) {
@@ -70,6 +68,12 @@ for (const key of REQUIRED_SECRETS) {
   if (!value) fail(`${key} is missing from ${secretFile}`);
   if (/replace|example|placeholder/i.test(value)) fail(`${key} still contains a placeholder`);
 }
+if (checkoutEnabled) {
+  for (const key of ["TURNSTILE_SECRET_KEY", "GITHUB_API_TOKEN", "CREEM_API_KEY", "CREEM_WEBHOOK_SECRET", "CREEM_PRODUCT_ID"] as const) {
+    const value = secrets.get(key);
+    if (!value) fail(`${key} is required while CHECKOUT_ENABLED=true`);
+  }
+}
 
 for (const key of ["FOUNDER_ACCESS_SECRET", "RATE_LIMIT_SALT", "MAINTENANCE_SECRET"] as const) {
   if ((secrets.get(key)?.length ?? 0) < 32) fail(`${key} must contain at least 32 characters`);
@@ -77,7 +81,7 @@ for (const key of ["FOUNDER_ACCESS_SECRET", "RATE_LIMIT_SALT", "MAINTENANCE_SECR
 if (new Set(["FOUNDER_ACCESS_SECRET", "RATE_LIMIT_SALT", "MAINTENANCE_SECRET"].map((key) => secrets.get(key))).size !== 3) {
   fail("FOUNDER_ACCESS_SECRET, RATE_LIMIT_SALT, and MAINTENANCE_SECRET must use different values");
 }
-if (/^1x0{10,}/.test(secrets.get("TURNSTILE_SECRET_KEY") ?? "")) {
+if (checkoutEnabled && /^1x0{10,}/.test(secrets.get("TURNSTILE_SECRET_KEY") ?? "")) {
   fail("production cannot use Cloudflare's published Turnstile test keys");
 }
 

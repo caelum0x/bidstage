@@ -18,6 +18,8 @@
     "create:hyperdrive": "zsh scripts/create-hyperdrive.zsh",
     "bootstrap:production-db": "zsh scripts/bootstrap-production-database.zsh",
     "deploy:bootstrap": "wrangler deploy --config wrangler.bootstrap.jsonc --x-autoconfig=false",
+    "configure:production-auth": "zsh scripts/configure-production-auth.zsh",
+    "deploy:public": "node --import tsx scripts/public-launch-preflight.ts && opennextjs-cloudflare build && wrangler deploy --x-autoconfig=false",
     "preflight:production": "node --import tsx scripts/production-preflight.ts",
     "deploy:worker": "bun run preflight:production && opennextjs-cloudflare build && wrangler deploy --secrets-file .secrets.production",
     "upload:worker": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
