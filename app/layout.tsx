@@ -31,6 +31,29 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://bidstage.app/#organization",
+      name: "BidStage",
+      url: "https://bidstage.app",
+      description: "A transparent sponsored board for owner-verified, OSI-licensed open-source projects.",
+      logo: "https://bidstage.app/icon.svg",
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://bidstage.app/#website",
+      name: "BidStage",
+      url: "https://bidstage.app",
+      description: "A transparent sponsored board for owner-verified, OSI-licensed open-source projects.",
+      publisher: { "@id": "https://bidstage.app/#organization" },
+      inLanguage: "en",
+    },
+  ],
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><a className="skip-link" href="#main-content">Skip to main content</a>{children}</body></html>;
+  return <html lang="en"><body><a className="skip-link" href="#main-content">Skip to main content</a><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />{children}</body></html>;
 }
