@@ -1,6 +1,7 @@
 import type { DatabaseClient } from "./db";
 import { privacyHash } from "./privacy-hash";
 import { listingSlug } from "./market";
+import { reversalStates } from "./reversal-states";
 
 export type PaymentProvider = "creem" | "dodo";
 
@@ -33,6 +34,7 @@ type CheckoutRow = {
 type AdjustmentRow = {
   checkout_id: string;
   checkout_state: string;
+  adjustment_state: string;
   listing_id: string;
   amount_cents: number;
   refunded_cents: number;
@@ -246,7 +248,8 @@ export async function reversePlacement(
   input: Readonly<ReversePlacementInput>,
 ) {
   const bidResult = await client.query<AdjustmentRow>(
-    `SELECT bids.checkout_id, checkout.state AS checkout_state, bids.listing_id,
+    `SELECT bids.checkout_id, checkout.state AS checkout_state,
+            bids.adjustment_state, bids.listing_id,
             bids.amount_cents, bids.refunded_cents, checkout.currency,
             bids.provider_transaction_id
      FROM bids
@@ -286,14 +289,12 @@ export async function reversePlacement(
   }
   const delta = Math.max(0, targetReversal - bid.refunded_cents);
   const nextReversed = bid.refunded_cents + delta;
-  const adjustmentState = input.kind === "dispute"
-    ? "disputed"
-    : nextReversed === bid.amount_cents ? "refunded" : "partial_refund";
-  const checkoutState = input.kind === "dispute"
-    ? "disputed"
-    : bid.checkout_state === "disputed"
-      ? "disputed"
-      : nextReversed === bid.amount_cents ? "refunded" : "partially_refunded";
+  const { adjustmentState, checkoutState } = reversalStates({
+    kind: input.kind,
+    priorAdjustmentState: bid.adjustment_state,
+    priorCheckoutState: bid.checkout_state,
+    fullyReversed: nextReversed === bid.amount_cents,
+  });
 
   if (delta > 0) {
     await client.query(
