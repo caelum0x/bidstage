@@ -40,9 +40,17 @@ test("normalizes public destinations and stable X handles", () => {
 });
 
 test("rejects private, credentialed, and non-http destinations", () => {
-  for (const input of ["localhost:3000", "http://127.0.0.1", "http://192.168.1.4", "https://user:pass@example.com", "javascript:alert(1)"]) {
+  for (const input of ["localhost:3000", "http://127.0.0.1", "http://192.168.1.4", "https://user:pass@example.com", "javascript:alert(1)", "http://[fc00::1]", "http://[fd12::1]", "http://[fe80::1]", "http://[::1]"]) {
     assert.throws(() => normalizeDestination(input));
   }
+});
+
+test("accepts public domains that merely begin with private IPv6 prefixes", () => {
+  assert.equal(normalizeDestination("fd.io"), "https://fd.io/");
+  assert.equal(normalizeDestination("https://fdroid.org"), "https://fdroid.org/");
+  assert.equal(normalizeDestination("fda.gov"), "https://fda.gov/");
+  assert.equal(normalizeDestination("fcbarcelona.com"), "https://fcbarcelona.com/");
+  assert.equal(normalizeDestination("fe80host.example"), "https://fe80host.example/");
 });
 
 test("checkout validation is strict and produces a normalized payload", () => {

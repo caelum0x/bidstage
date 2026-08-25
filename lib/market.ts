@@ -54,7 +54,13 @@ function publicHostname(hostname: string): boolean {
   if (/^(127\.|0\.|10\.|192\.168\.|169\.254\.)/.test(host)) return false;
   const match = host.match(/^172\.(\d{1,3})\./);
   if (match && Number(match[1]) >= 16 && Number(match[1]) <= 31) return false;
-  if (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) return false;
+  // The ULA (fc00::/7) and link-local (fe80::/10) prefixes only apply to IPv6
+  // literals, which always contain a colon. Guarding on that colon prevents
+  // ordinary domains that merely begin with "fc"/"fd"/"fe80" (e.g. fd.io,
+  // fdroid.org, fcbarcelona.com) from being misclassified as private hosts.
+  if (host.includes(":") && (host === "::1" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80"))) {
+    return false;
+  }
   return host.includes(".");
 }
 
