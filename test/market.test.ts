@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { listingSlug, normalizeDestination, parseCheckoutInput, parseRankQuoteInput, requestIp, requestSubject } from "../lib/market";
+import { listingSlug, MarketInputError, normalizeDestination, parseCheckoutInput, parseRankQuoteInput, requestIp, requestSubject } from "../lib/market";
 import { existingPlacementMatches, founderCanEditListing } from "../lib/listing-ownership";
 import { containsOsiApprovedLicense } from "../lib/osi";
 import { normalizeCountryCode, normalizeFunding, requireFundingPublisher } from "../lib/project-profile";
@@ -62,6 +62,25 @@ test("checkout validation is strict and produces a normalized payload", () => {
   assert.throws(() => parseCheckoutInput({ title: "Valid", destination: "example.com", category: "ai", amountCents: 500, acceptedRules: false }));
   assert.throws(() => parseCheckoutInput({ title: "Valid", destination: "example.com", category: "ai", amountCents: 500, acceptedRules: true, productKind: "commercial" }));
   assert.throws(() => parseCheckoutInput({ title: "Valid", destination: "example.com", category: "ai", amountCents: 500, acceptedRules: true, productKind: "open_source" }));
+});
+
+test("upvote purchases must be whole $5 tokens, not off-grid cent amounts", () => {
+  // The UI always sends amountCents = quantity * UPVOTE_PRICE_CENTS, but these
+  // validators guard the untrusted public API boundary. An off-grid amount that
+  // is not a whole number of upvotes must be rejected on both the checkout and
+  // quote paths so the pricing invariant holds server-side.
+  const valid = { title: "Signal Works", destination: "example.com", category: "ai", acceptedRules: true, productKind: "open_source", repositoryUrl: "https://github.com/signal/works" } as const;
+  assert.equal(parseCheckoutInput({ ...valid, amountCents: 1000 }).amountCents, 1000);
+  assert.equal(parseCheckoutInput({ ...valid, amountCents: 5_000_000 }).amountCents, 5_000_000);
+  for (const amountCents of [501, 750, 999, 1001, 4_999_999]) {
+    assert.throws(() => parseCheckoutInput({ ...valid, amountCents }), MarketInputError, `checkout must reject ${amountCents}`);
+  }
+
+  const quote = { destination: "example.com", category: "developer", productKind: "open_source" } as const;
+  assert.equal(parseRankQuoteInput({ ...quote, amountCents: 1500 }).amountCents, 1500);
+  for (const amountCents of [501, 750, 1001]) {
+    assert.throws(() => parseRankQuoteInput({ ...quote, amountCents }), MarketInputError, `quote must reject ${amountCents}`);
+  }
 });
 
 test("project profiles validate countries and canonical external funding links", () => {

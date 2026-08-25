@@ -85,6 +85,29 @@ export function listingSlug(destination: string): string {
   return `${base}-${suffix}`;
 }
 
+/**
+ * Server-side price integrity boundary for the upvote-token product. Upvotes are
+ * sold only in whole $5.00 units, so amountCents must be a positive integer
+ * multiple of UPVOTE_PRICE_CENTS between 1 and MAX_UPVOTES tokens. The UI derives
+ * amountCents = quantity * UPVOTE_PRICE_CENTS, but the checkout and quote APIs are
+ * untrusted inputs and must reject any off-grid amount (e.g. 501 cents) that would
+ * not correspond to a whole number of upvotes.
+ */
+export function parseUpvoteAmountCents(value: unknown): number {
+  const amountCents = Number(value);
+  if (
+    !Number.isSafeInteger(value) ||
+    amountCents < MIN_BID_CENTS ||
+    amountCents > MAX_BID_CENTS ||
+    amountCents % UPVOTE_PRICE_CENTS !== 0
+  ) {
+    throw new MarketInputError(
+      `Buy a whole number of upvotes between 1 and ${MAX_UPVOTES.toLocaleString("en-US")} ($${MIN_BID_CENTS / 100}–$${(MAX_BID_CENTS / 100).toLocaleString("en-US")})`,
+    );
+  }
+  return amountCents;
+}
+
 export function parseCheckoutInput(value: unknown): CheckoutInput {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new MarketInputError("Invalid checkout request");
   const body = value as Record<string, unknown>;
@@ -92,10 +115,7 @@ export function parseCheckoutInput(value: unknown): CheckoutInput {
   if (title.length < 2 || title.length > 64) throw new MarketInputError("Product name must be 2–64 characters");
   const destination = normalizeDestination(typeof body.destination === "string" ? body.destination : "");
   if (!CATEGORIES.includes(body.category as Category)) throw new MarketInputError("Choose a valid category");
-  const amountCents = body.amountCents;
-  if (!Number.isSafeInteger(amountCents) || Number(amountCents) < MIN_BID_CENTS || Number(amountCents) > MAX_BID_CENTS) {
-    throw new MarketInputError(`Buy between 1 and ${MAX_UPVOTES.toLocaleString("en-US")} upvotes ($${MIN_BID_CENTS / 100}–$${(MAX_BID_CENTS / 100).toLocaleString("en-US")})`);
-  }
+  const amountCents = parseUpvoteAmountCents(body.amountCents);
   if (body.acceptedRules !== true) throw new MarketInputError("Accept the marketplace rules before checkout");
   if (body.productKind !== "open_source") {
     throw new MarketInputError("Bidstage accepts verified open-source projects only");
@@ -109,7 +129,7 @@ export function parseCheckoutInput(value: unknown): CheckoutInput {
   }
   const profile = parseProjectProfile(body.countryCode, body.fundingUrl);
   const contributionOpportunity = parseContributionOpportunity(body.contributionUrl, body.contributionNote);
-  return { title, destination, category: body.category as Category, amountCents: Number(amountCents), acceptedRules: true, productKind, repositoryUrl, ...profile, contributionOpportunity };
+  return { title, destination, category: body.category as Category, amountCents, acceptedRules: true, productKind, repositoryUrl, ...profile, contributionOpportunity };
 }
 
 export function parseRankQuoteInput(value: unknown): RankQuoteInput {
@@ -126,19 +146,10 @@ export function parseRankQuoteInput(value: unknown): RankQuoteInput {
   if (body.productKind !== "open_source") {
     throw new MarketInputError("Bidstage accepts verified open-source projects only");
   }
-  if (
-    !Number.isSafeInteger(body.amountCents) ||
-    Number(body.amountCents) < MIN_BID_CENTS ||
-    Number(body.amountCents) > MAX_BID_CENTS
-  ) {
-    throw new MarketInputError(
-      `Buy between 1 and ${MAX_UPVOTES.toLocaleString("en-US")} upvotes ($${MIN_BID_CENTS / 100}–$${(MAX_BID_CENTS / 100).toLocaleString("en-US")})`,
-    );
-  }
   return {
     destination,
     category: body.category as Category,
-    amountCents: Number(body.amountCents),
+    amountCents: parseUpvoteAmountCents(body.amountCents),
     productKind: "open_source",
   };
 }
