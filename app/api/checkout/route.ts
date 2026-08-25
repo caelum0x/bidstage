@@ -37,6 +37,16 @@ function digest(value: string): string {
 export async function POST(request: NextRequest) {
   try {
     const env = serverEnv();
+    // Explicit, fail-fast off-switch. Checkout stays gated off (CHECKOUT_ENABLED
+    // defaults to false) independently of the Turnstile path, so no provider
+    // checkout can ever be created while the product is dark. This is the single
+    // authoritative gate; downstream steps assume checkout is open.
+    if (!env.checkoutEnabled) {
+      return NextResponse.json(
+        { error: "checkout_disabled", message: "Checkout is not open yet." },
+        { status: 503, headers: { "Retry-After": "3600" } },
+      );
+    }
     const origin = request.headers.get("origin");
     if (origin !== env.appUrl) {
       return NextResponse.json(

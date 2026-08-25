@@ -33,7 +33,7 @@
     "verify": "bun run typecheck && bun run test && bun run test:integration && bun run build:worker && wrangler deploy --dry-run"
   },
   "dependencies": {
-    "next": "16.3.0",
+    "next": "16.2.11",
     "pg": "8.16.3",
     "react": "19.2.8",
     "react-dom": "19.2.8"

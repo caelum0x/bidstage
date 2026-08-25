@@ -231,6 +231,18 @@ test("repeat placements preserve the active project identity and use a bounded p
   assert.match(checkout, /existingPlacementMatches\(conflict, input, String\(repository\.id\)\)/);
 });
 
+test("checkout is gated off by an explicit fail-fast CHECKOUT_ENABLED guard", () => {
+  const checkout = readFileSync(new URL("../app/api/checkout/route.ts", import.meta.url), "utf8");
+  // The off-switch must be an explicit early return, not an implicit side effect
+  // of the Turnstile path, and must run before any provider checkout is created.
+  const gate = checkout.match(/if \(!env\.checkoutEnabled\) \{[\s\S]*?"checkout_disabled"[\s\S]*?\}/);
+  assert.ok(gate, "checkout route must return checkout_disabled when checkout is off");
+  assert.ok(
+    checkout.indexOf("!env.checkoutEnabled") < checkout.indexOf("createPlacementCheckout("),
+    "the checkout_disabled gate must run before createPlacementCheckout",
+  );
+});
+
 test("webhook incident references are stable and do not expose provider event IDs", () => {
   const incident = webhookIncidentId("evt_creem_sensitive_123");
   assert.equal(incident, webhookIncidentId("evt_creem_sensitive_123"));
