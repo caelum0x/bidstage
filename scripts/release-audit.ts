@@ -109,7 +109,7 @@ async function auditHttp(baseUrl: string): Promise<void> {
   const bidsBody = await bidsPage.text();
   record(
     "deployed project bidding guide",
-    bidsPage.ok && bidsBody.includes("How project bidding works") && bidsBody.includes("Start a placement"),
+    bidsPage.ok && bidsBody.includes("per upvote") && bidsBody.includes("Buy upvotes"),
     bidsPage.ok ? "open-source placement boundary published" : `HTTP ${bidsPage.status}`,
   );
 

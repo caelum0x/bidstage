@@ -889,7 +889,7 @@ test("project bidding guide stays tied to the settled open-source ledger", () =>
   assert.match(page, /status = 'active' AND product_kind = 'open_source'/);
   assert.match(page, /sum\(total_cents\)/);
   assert.match(page, /sum\(bid_count\)/);
-  assert.match(page, /How project bidding works/);
+  assert.match(page, /per upvote/);
   assert.match(page, /Start a placement/);
   assert.match(page, /signed webhook settles the payment/i);
   assert.match(page, /Refund and dispute reversals subtract/);
@@ -904,7 +904,7 @@ test("project bidding guide stays tied to the settled open-source ledger", () =>
 
   const audit = readFileSync(new URL("../scripts/release-audit.ts", import.meta.url), "utf8");
   assert.match(audit, /deployed project bidding guide/);
-  assert.match(audit, /How project bidding works/);
+  assert.match(audit, /Buy upvotes/);
   assert.doesNotMatch(audit, /procurement|Contracts Finder|\bTED\b/i);
 
   const worker = readFileSync(new URL("../custom-worker.ts", import.meta.url), "utf8");
