@@ -547,4 +547,53 @@ test("a provider transaction id credits at most one bid across checkouts", async
   );
   assert.equal(bids.rows[0]!.count, "1");
 });
+
+test("launch notifications capture once per email and keep first attribution", async () => {
+  const founder = await founderId(778899, "launch-notify-founder");
+  const subscribe = (source: string, repositoryUrl: string | null, founderRef: string | null) =>
+    pool.query(
+      `INSERT INTO launch_notifications (email, source, repository_url, founder_id)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO NOTHING`,
+      ["buyer@example.com", source, repositoryUrl, founderRef],
+    );
+
+  const first = await subscribe("checkout_disabled", "https://github.com/acme/widget", founder);
+  assert.equal(first.rowCount, 1);
+  // A repeat signup (different source, no founder) is an idempotent no-op that
+  // preserves the original attribution instead of overwriting it.
+  const replay = await subscribe("landing", null, null);
+  assert.equal(replay.rowCount, 0);
+  const stored = await pool.query<{
+    email: string;
+    source: string;
+    repository_url: string | null;
+    founder_id: string | null;
+  }>(
+    "SELECT email, source, repository_url, founder_id FROM launch_notifications WHERE email = $1",
+    ["buyer@example.com"],
+  );
+  assert.equal(stored.rowCount, 1);
+  assert.deepEqual(stored.rows[0], {
+    email: "buyer@example.com",
+    source: "checkout_disabled",
+    repository_url: "https://github.com/acme/widget",
+    founder_id: founder,
+  });
+
+  // The table's own constraints reject un-normalized or unknown values even if
+  // a future caller bypasses the route-level validation.
+  await assert.rejects(
+    pool.query(
+      "INSERT INTO launch_notifications (email, source) VALUES ($1, $2)",
+      ["Upper@Example.com", "checkout_disabled"],
+    ),
+  );
+  await assert.rejects(
+    pool.query(
+      "INSERT INTO launch_notifications (email, source) VALUES ($1, $2)",
+      ["ok@example.com", "not_a_source"],
+    ),
+  );
+});
 }

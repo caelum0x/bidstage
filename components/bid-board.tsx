@@ -77,6 +77,9 @@ export function BidBoard({
   const [boardError, setBoardError] = useState<string>();
   const [checkoutError, setCheckoutError] = useState<string>();
   const [submitting, setSubmitting] = useState(false);
+  const [checkoutClosed, setCheckoutClosed] = useState(false);
+  const [notifyEmail, setNotifyEmail] = useState("");
+  const [notifyState, setNotifyState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [title, setTitle] = useState("");
   const [destination, setDestination] = useState("");
   const [bidCategory, setBidCategory] = useState<Category>("ai");
@@ -275,12 +278,35 @@ export function BidBoard({
         body: JSON.stringify({ ...checkoutInput, turnstileToken }),
       });
       const body = await response.json();
+      if (body.error === "checkout_disabled") {
+        setCheckoutClosed(true);
+        setSubmitting(false);
+        return;
+      }
       if (!response.ok) throw new Error(body.message ?? "Checkout could not be created.");
       window.location.assign(body.checkoutUrl);
     } catch (cause) {
       setCheckoutError(cause instanceof Error ? cause.message : "Checkout could not be created.");
       (window as typeof window & { turnstile?: { reset(): void } }).turnstile?.reset();
       setSubmitting(false);
+    }
+  }
+
+  async function subscribeLaunchNotify() {
+    setNotifyState("sending");
+    try {
+      const response = await fetch("/api/launch-notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: notifyEmail,
+          repositoryUrl: repositoryUrl.trim() || null,
+          source: "checkout_disabled",
+        }),
+      });
+      setNotifyState(response.ok ? "done" : "error");
+    } catch {
+      setNotifyState("error");
     }
   }
 
@@ -397,6 +423,32 @@ export function BidBoard({
               </>
             ) : <p className="form-error" role="alert">Checkout verification is not configured.</p>}
             {checkoutError ? <p className="form-error" role="alert">{checkoutError}</p> : null}
+            {checkoutClosed ? (
+              <div className="launch-notify" role="status">
+                {notifyState === "done" ? (
+                  <p>You&apos;re on the list. We&apos;ll email you the moment checkout opens.</p>
+                ) : (
+                  <>
+                    <p>Checkout isn&apos;t open yet — payments go live once our provider finishes approval. Leave your email and we&apos;ll notify you the moment it opens.</p>
+                    <div className="launch-notify-row">
+                      <input
+                        type="email"
+                        autoComplete="email"
+                        placeholder="you@company.com"
+                        aria-label="Email for launch notification"
+                        value={notifyEmail}
+                        onChange={(event) => setNotifyEmail(event.target.value)}
+                        disabled={notifyState === "sending"}
+                      />
+                      <button type="button" disabled={notifyState === "sending" || !notifyEmail.trim()} onClick={() => void subscribeLaunchNotify()}>
+                        {notifyState === "sending" ? "Saving…" : "Notify me"}
+                      </button>
+                    </div>
+                    {notifyState === "error" ? <p className="form-error" role="alert">That didn&apos;t save — check the email and try again.</p> : null}
+                  </>
+                )}
+              </div>
+            ) : null}
             <button className="primary" type="submit" disabled={submitting || placementLoading || Boolean(placementError) || !currentQuote || !turnstileSiteKey || !founder || !repositoryUrl.trim()}>{submitting ? "Opening secure checkout…" : placementProject ? "Continue to upvote checkout" : "Continue to verified checkout"}</button>
             <p className="fine">This payment buys upvotes — labeled sponsored placement paid to Bidstage. Rank changes after the payment provider confirms settlement through a signed event.</p>
           </form>
