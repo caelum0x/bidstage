@@ -66,6 +66,10 @@ export async function createCreemCheckout(
     headers: {
       "Content-Type": "application/json",
       "x-api-key": env.apiKey,
+      // Stable per-checkout idempotency key. Concurrent retries of the same
+      // Bidstage checkout (identical requestId) return the same provider session
+      // instead of creating a second payable checkout.
+      "Idempotency-Key": input.requestId,
     },
     body: JSON.stringify({
       product_id: env.productId,

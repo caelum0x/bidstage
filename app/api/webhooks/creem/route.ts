@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import { query, transaction, type DatabaseClient } from "@/lib/db";
+import { creemCumulativeReversedCents } from "@/lib/creem-refund";
 import { creemEnv } from "@/lib/env";
 import { markPaymentEvent, reversePlacement, settlePlacement } from "@/lib/payment-settlement";
 import { webhookIncidentId } from "@/lib/webhook-incidents";
@@ -113,15 +114,11 @@ async function reverseCreemContribution(
 
   let cumulativeReversedCents: number | undefined;
   if (kind === "refund") {
-    const amountPaid = cents(providerTransaction.amount_paid, "Creem paid amount");
-    const cumulativePaidRefund = cents(
-      providerTransaction.refunded_amount,
-      "Creem cumulative refunded amount",
-    );
-    cumulativeReversedCents = Math.min(
+    cumulativeReversedCents = creemCumulativeReversedCents({
       transactionAmount,
-      Math.round((transactionAmount * cumulativePaidRefund) / amountPaid),
-    );
+      amountPaid: cents(providerTransaction.amount_paid, "Creem paid amount"),
+      refundedAmount: cents(providerTransaction.refunded_amount, "Creem cumulative refunded amount"),
+    });
   }
   await reversePlacement(client, {
     provider: "creem",
