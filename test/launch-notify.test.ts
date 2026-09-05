@@ -26,6 +26,11 @@ test("normalizeLaunchNotifyRepositoryUrl accepts http(s) URLs and null", () => {
     "https://github.com/acme/widget",
   );
   assert.equal(normalizeLaunchNotifyRepositoryUrl("  https://gitlab.com/a/b  "), "https://gitlab.com/a/b");
+  // WHATWG-normalized: scheme and host lowercase, path casing preserved.
+  assert.equal(
+    normalizeLaunchNotifyRepositoryUrl("HTTPS://GitHub.com/Acme/Widget"),
+    "https://github.com/Acme/Widget",
+  );
   assert.equal(normalizeLaunchNotifyRepositoryUrl(null), null);
   assert.equal(normalizeLaunchNotifyRepositoryUrl(undefined), null);
   assert.equal(normalizeLaunchNotifyRepositoryUrl(""), null);

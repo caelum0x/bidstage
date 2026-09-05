@@ -42,9 +42,16 @@ export async function persistProviderCheckoutSession(
     [input.checkoutId, input.providerCheckoutId, input.checkoutUrl],
   );
   const row = result.rows[0];
+  if (!row) {
+    // The intent row was created moments ago in this request, so a zero-row
+    // UPDATE means something is seriously wrong (wrong database, external
+    // deletion). Failing loudly routes the caller to its failure path instead
+    // of handing the buyer a provider session no webhook can ever settle.
+    throw new Error("Checkout intent disappeared before the provider session could be persisted");
+  }
   return {
-    providerCheckoutId: row?.provider_checkout_id ?? null,
-    checkoutUrl: row?.checkout_url ?? null,
+    providerCheckoutId: row.provider_checkout_id,
+    checkoutUrl: row.checkout_url,
   };
 }
 

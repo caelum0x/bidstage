@@ -8,7 +8,8 @@
 CREATE TABLE launch_notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   email text NOT NULL UNIQUE
-    CHECK (email = lower(email) AND char_length(email) <= 254 AND position('@' IN email) > 1),
+    CHECK (email = lower(email) AND char_length(email) <= 254
+           AND email ~ '^[^@\s]+@[^@\s]+\.[^@\s]{2,}$'),
   source text NOT NULL
     CHECK (source IN ('checkout_disabled', 'landing')),
   repository_url text

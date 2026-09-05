@@ -519,8 +519,76 @@ test("a refund after a dispute is a zero-delta no-op that keeps the disputed sta
     adjustment_state: "disputed",
     refunded_cents: 500,
     total_cents: "0",
-    adjustments: "1",
+    // The no-op refund is still recorded (zero applied amount) so the refund id
+    // remains auditable next to the dispute row.
+    adjustments: "2",
     event_state: "processed",
+  });
+  const noOp = await pool.query<{
+    adjustment_type: string;
+    amount_cents: number;
+    cumulative_amount_cents: number;
+  }>(
+    `SELECT adjustment_type, amount_cents, cumulative_amount_cents
+     FROM payment_adjustments WHERE provider_adjustment_id = 'refund_ad'`,
+  );
+  assert.deepEqual(noOp.rows[0], {
+    adjustment_type: "clamped_reversal",
+    amount_cents: 0,
+    cumulative_amount_cents: 1000,
+  });
+});
+
+test("an over-refund from a new adjustment id leaves a queryable clamped_reversal audit row", async () => {
+  const founder = await founderId(920020, "overrefund-owner");
+  const fixture = await checkoutFixture(founder, "overrefund", 700, "https://overrefund.example/", 5500020);
+  await inTransaction((client) => settlePlacement(client, settlementInput(fixture)));
+  await pool.query("UPDATE listings SET status = 'active' WHERE destination = $1", [fixture.destination]);
+
+  const refund = (eventId: string, adjustmentId: string, amountCents: number) => {
+    return inTransaction((client) => reversePlacement(client, {
+      provider: "creem",
+      eventId,
+      providerAdjustmentId: adjustmentId,
+      providerOrderId: settlementInput(fixture).providerOrderId,
+      providerTransactionId: settlementInput(fixture).providerTransactionId,
+      kind: "refund",
+      currency: "USD",
+      adjustmentAmountCents: amountCents,
+      originalAmountCents: 700,
+    }));
+  };
+
+  await addEvent("event_or_full", "refund.created", "refund_or_full");
+  await refund("event_or_full", "refund_or_full", 700);
+  // A second, DISTINCT refund id for the full amount — e.g. a provider console
+  // mistake — must not move money, but must not vanish either.
+  await addEvent("event_or_extra", "refund.created", "refund_or_extra");
+  await assert.doesNotReject(refund("event_or_extra", "refund_or_extra", 700));
+
+  const state = await pool.query<{
+    refunded_cents: number;
+    anomaly_type: string;
+    anomaly_amount: number;
+    anomaly_cumulative: number;
+  }>(
+    `SELECT bid.refunded_cents,
+            anomaly.adjustment_type AS anomaly_type,
+            anomaly.amount_cents AS anomaly_amount,
+            anomaly.cumulative_amount_cents AS anomaly_cumulative
+     FROM bids AS bid
+     JOIN payment_adjustments AS anomaly
+       ON anomaly.provider_adjustment_id = 'refund_or_extra'
+     WHERE bid.checkout_id = $1`,
+    [fixture.checkoutId],
+  );
+  assert.deepEqual(state.rows[0], {
+    refunded_cents: 700,
+    anomaly_type: "clamped_reversal",
+    // Zero applied, but the provider-claimed cumulative (700 already refunded
+    // + 700 re-issued = 1400) is preserved for reconciliation.
+    anomaly_amount: 0,
+    anomaly_cumulative: 1400,
   });
 });
 

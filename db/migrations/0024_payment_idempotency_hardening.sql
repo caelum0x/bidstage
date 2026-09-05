@@ -20,3 +20,22 @@ CREATE UNIQUE INDEX payment_adjustments_provider_adjustment_idx
 CREATE UNIQUE INDEX bids_provider_transaction_idx
   ON bids (provider, provider_transaction_id)
   WHERE provider_transaction_id IS NOT NULL;
+
+-- A reversal that applies nothing (already fully reversed, or clamped to zero)
+-- must still be recorded for reconciliation: 'clamped_reversal' rows carry a
+-- zero applied amount and the provider-claimed cumulative, so a provider-side
+-- over-refund is queryable instead of silently absorbed. Only that type may
+-- have amount_cents = 0; real refund/dispute rows still require a positive
+-- applied amount.
+ALTER TABLE payment_adjustments
+  DROP CONSTRAINT payment_adjustments_adjustment_type_check;
+ALTER TABLE payment_adjustments
+  ADD CONSTRAINT payment_adjustments_adjustment_type_check
+    CHECK (adjustment_type IN ('refund', 'dispute', 'clamped_reversal'));
+ALTER TABLE payment_adjustments
+  DROP CONSTRAINT payment_adjustments_amount_cents_check;
+ALTER TABLE payment_adjustments
+  ADD CONSTRAINT payment_adjustments_amount_cents_check
+    CHECK (CASE WHEN adjustment_type = 'clamped_reversal'
+                THEN amount_cents = 0
+                ELSE amount_cents > 0 END);

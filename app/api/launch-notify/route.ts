@@ -9,6 +9,7 @@ import {
   normalizeLaunchNotifyRepositoryUrl,
 } from "@/lib/launch-notify";
 import { requestSubject } from "@/lib/market";
+import { serverEnv } from "@/lib/env";
 
 /**
  * Pre-launch demand capture: "email me when checkout opens."
@@ -19,7 +20,9 @@ import { requestSubject } from "@/lib/market";
  * it cannot be used to probe who is on the list.
  */
 export async function POST(request: NextRequest) {
-  if (request.headers.get("origin") !== request.nextUrl.origin) {
+  // Same policy as checkout: compare against the configured public origin, not
+  // request.nextUrl, so a proxy-rewritten Host header cannot shift the check.
+  if (request.headers.get("origin") !== serverEnv().appUrl) {
     return NextResponse.json({ error: "forbidden_origin" }, { status: 403 });
   }
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) {

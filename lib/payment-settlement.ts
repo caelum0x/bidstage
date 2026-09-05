@@ -296,27 +296,32 @@ export async function reversePlacement(
     throw new Error("Provider adjustment does not match a settled contribution");
   }
 
-  let targetReversal = bid.amount_cents;
+  let requestedReversal = bid.amount_cents;
   if (input.kind === "refund") {
     if (input.cumulativeReversedCents !== undefined) {
       if (!Number.isSafeInteger(input.cumulativeReversedCents) || input.cumulativeReversedCents <= 0) {
         throw new Error("Cumulative refund amount must be a positive integer");
       }
-      targetReversal = input.cumulativeReversedCents;
+      requestedReversal = input.cumulativeReversedCents;
     } else {
       if (!Number.isSafeInteger(input.adjustmentAmountCents) || (input.adjustmentAmountCents ?? 0) <= 0) {
         throw new Error("Refund amount must be a positive integer");
       }
-      targetReversal = bid.refunded_cents + input.adjustmentAmountCents!;
+      requestedReversal = bid.refunded_cents + input.adjustmentAmountCents!;
     }
-    // Never reverse more than the settled contribution. A refund that would push
-    // past the contribution total is either a duplicate or a refund issued after
-    // the bid was already fully reversed (e.g. a provider that refunds to close a
-    // won/lost dispute). Both must resolve to a zero-delta, state-preserving
-    // no-op rather than throwing forever and jamming the webhook. The DB CHECK
-    // (refunded_cents <= amount_cents) also depends on this clamp holding.
-    targetReversal = Math.min(targetReversal, bid.amount_cents);
   }
+  // Never reverse more than the settled contribution. A refund that would push
+  // past the contribution total is either a duplicate or a refund issued after
+  // the bid was already fully reversed (e.g. a provider that refunds to close a
+  // won/lost dispute). Both must resolve to a zero-delta, state-preserving
+  // no-op rather than throwing forever and jamming the webhook. The DB CHECK
+  // (refunded_cents <= amount_cents) also depends on this clamp holding.
+  // The unclamped request is preserved: it is what the provider claims to have
+  // reversed, and every reversal records it (see the adjustment inserts below)
+  // so a provider-side over-refund stays queryable instead of vanishing.
+  const targetReversal = input.kind === "refund"
+    ? Math.min(requestedReversal, bid.amount_cents)
+    : requestedReversal;
   const delta = Math.max(0, targetReversal - bid.refunded_cents);
   const nextReversed = bid.refunded_cents + delta;
   const { adjustmentState, checkoutState } = reversalStates({
@@ -347,7 +352,10 @@ export async function reversePlacement(
         bid.checkout_id,
         input.kind,
         delta,
-        nextReversed,
+        // The provider-claimed cumulative, NOT the clamped internal total: when
+        // the clamp reduced a partial over-refund this is the only place the
+        // requested amount survives for reconciliation.
+        requestedReversal,
         bid.currency,
       ],
     );
@@ -379,6 +387,30 @@ export async function reversePlacement(
            updated_at = now()
        WHERE id = $1`,
       [bid.listing_id, delta, nextReversed === bid.amount_cents],
+    );
+  } else {
+    // A reversal that applies nothing (already fully reversed, or a refund the
+    // clamp reduced to zero) must still leave an audit trail: before, this path
+    // threw and surfaced as a webhook incident. Record the adjustment id with a
+    // zero applied amount and the provider-claimed cumulative so a provider-side
+    // over-refund (accidental second refund, support re-issue) stays visible to
+    // operators (adjustment_type = 'clamped_reversal') instead of being silently
+    // absorbed. Replays of an already-recorded adjustment id remain no-ops.
+    await client.query(
+      `INSERT INTO payment_adjustments
+         (provider, provider_event_id, provider_adjustment_id, provider_transaction_id,
+          checkout_id, adjustment_type, amount_cents, cumulative_amount_cents, currency)
+       VALUES ($1, $2, $3, $4, $5, 'clamped_reversal', 0, $6, $7)
+       ON CONFLICT (provider, provider_adjustment_id) DO NOTHING`,
+      [
+        input.provider,
+        input.eventId,
+        input.providerAdjustmentId,
+        input.providerTransactionId,
+        bid.checkout_id,
+        requestedReversal,
+        bid.currency,
+      ],
     );
   }
 

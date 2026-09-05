@@ -50,5 +50,7 @@ export function normalizeLaunchNotifyRepositoryUrl(value: unknown): string | nul
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
     throw new Error("The repository URL must be a web address");
   }
-  return url;
+  // Store the WHATWG-normalized form (lowercased scheme/host, canonical
+  // encoding) so later comparisons never depend on how the founder typed it.
+  return parsed.href;
 }
