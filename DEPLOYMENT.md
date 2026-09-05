@@ -1,6 +1,25 @@
 # Bidstage release runbook
 
-Last revised: 24 August 2026
+Last revised: 5 September 2026
+
+## 0. Creem approval day — the flip checklist
+
+The site is designed to run publicly with `CHECKOUT_ENABLED=false` (the bid
+form captures launch-notification emails instead of selling). The moment Creem
+approves the account, going live is configuration only:
+
+1. In the Creem dashboard: create the custom-price USD product (section 1) and
+   copy the product id; register the webhook exactly as in section 6.
+2. Set Worker secrets: `CREEM_API_KEY`, `CREEM_WEBHOOK_SECRET`,
+   `CREEM_PRODUCT_ID`, and `CREEM_TEST_MODE=false` (section 4).
+3. Set `"CHECKOUT_ENABLED": "true"` in `wrangler.jsonc` vars. The production
+   preflight refuses to deploy with checkout on unless every Creem secret is
+   present, so a partial configuration cannot ship.
+4. Deploy with `bun run deploy:worker` (runs the preflight), then walk the
+   founder golden path (section 7) with a real small payment and confirm the
+   settled receipt and rank change.
+5. Email the `launch_notifications` list (one row per captured email,
+   `source`/`repository_url` attribution included) that checkout is open.
 
 This runbook produces one low-cost Cloudflare Worker backed by Neon and either
 Creem or Dodo Payments for one-time sponsored placement.
