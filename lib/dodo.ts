@@ -70,6 +70,10 @@ export async function createDodoCheckout(
       Accept: "application/json",
       Authorization: `Bearer ${env.apiKey}`,
       "Content-Type": "application/json",
+      // Stable per-checkout idempotency key. Concurrent retries of the same
+      // Bidstage checkout (identical requestId) return the same provider session
+      // instead of creating a second payable checkout.
+      "Idempotency-Key": input.requestId,
     },
     body: JSON.stringify({
       product_cart: [{ product_id: env.productId, quantity: 1, amount: input.amountCents }],

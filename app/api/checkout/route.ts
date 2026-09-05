@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticatedFounder } from "@/lib/auth";
-import { query, takeRateLimit } from "@/lib/db";
+import { query, takeRateLimit, transaction } from "@/lib/db";
+import {
+  markProviderCheckoutFailed,
+  persistProviderCheckoutSession,
+} from "@/lib/checkout-session";
 import { enforceEdgeWriteRateLimit } from "@/lib/edge-rate-limit";
 import { serverEnv } from "@/lib/env";
 import {
@@ -218,16 +222,16 @@ export async function POST(request: NextRequest) {
           github_repository_id: repository.id,
         },
       });
-      await query(
-        `UPDATE payment_checkouts
-         SET provider_checkout_id = $2, checkout_url = $3, state = 'pending',
-             failure_code = NULL, updated_at = now()
-         WHERE id = $1`,
-        [checkout.id, session.id, session.checkoutUrl],
+      const persisted = await transaction((client) =>
+        persistProviderCheckoutSession(client, {
+          checkoutId: checkout.id,
+          providerCheckoutId: session.id,
+          checkoutUrl: session.checkoutUrl,
+        }),
       );
       const response = NextResponse.json(
         {
-          checkoutUrl: session.checkoutUrl,
+          checkoutUrl: persisted.checkoutUrl ?? session.checkoutUrl,
           receiptUrl: `${env.appUrl}/receipt/${checkout.public_reference}`,
         },
         { status: 201 },
@@ -235,12 +239,8 @@ export async function POST(request: NextRequest) {
       setFounderAccessCookie(response, checkout.public_reference, founderToken);
       return response;
     } catch (error) {
-      await query(
-        `UPDATE payment_checkouts
-         SET state = 'failed', failure_code = 'provider_checkout_failed', updated_at = now()
-         WHERE id = $1 AND state <> 'settled'`,
-        [checkout.id],
-      ).catch(() => undefined);
+      await transaction((client) => markProviderCheckoutFailed(client, checkout.id))
+        .catch(() => undefined);
       throw error;
     }
   } catch (error) {
