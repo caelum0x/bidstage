@@ -33,6 +33,12 @@ import { edgeRateLimitKey } from "../lib/edge-rate-limit";
 import { authorizedMaintenanceRequest } from "../lib/maintenance-auth";
 import { MAINTENANCE_CRON, maintenanceNeedsAttention, parseMaintenanceInvocation } from "../lib/scheduled-maintenance";
 import { sampleRankHistory, type RankHistoryPoint } from "../lib/rank-history";
+import { categoryPageTitle } from "../lib/category-content";
+
+test("category page titles stay grammatical", () => {
+  assert.equal(categoryPageTitle("ai"), "AI open-source projects");
+  assert.equal(categoryPageTitle("other"), "Other open-source projects");
+});
 
 test("normalizes public destinations and stable X handles", () => {
   assert.equal(normalizeDestination("Example.COM/launch/?utm=x#hero"), "https://example.com/launch");

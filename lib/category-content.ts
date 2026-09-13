@@ -34,3 +34,10 @@ export function isCategory(value: string): value is Category {
 export function categoryContent(category: Category) {
   return content[category];
 }
+
+export function categoryPageTitle(category: Category) {
+  const label = content[category].label;
+  return category === "other"
+    ? "Other open-source projects"
+    : `${label} open-source projects`;
+}

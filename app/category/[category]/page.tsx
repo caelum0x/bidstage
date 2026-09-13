@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 
-import { categoryContent, isCategory } from "@/lib/category-content";
+import { categoryContent, categoryPageTitle, isCategory } from "@/lib/category-content";
 import { query } from "@/lib/db";
 import { DirectoryExplainer } from "@/components/directory-explainer";
 
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const category = checkedCategory((await params).category);
   const content = categoryContent(category);
   return {
-    title: `${content.label} open-source projects`,
+    title: categoryPageTitle(category),
     description: `Browse owner-verified open-source projects in Bidstage's ${content.label} category. Compare sponsored rank, placement totals, licenses, and public records.`,
     alternates: { canonical: `/category/${category}` },
   };
