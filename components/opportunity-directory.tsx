@@ -4,6 +4,7 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 
 import { countryName, type CountryCode } from "@/lib/countries";
 import { CATEGORIES, type Category } from "@/lib/market";
+import { DirectoryExplainer } from "@/components/directory-explainer";
 
 type Opportunity = {
   slug: string;
@@ -99,6 +100,30 @@ export function OpportunityDirectory({
           <label>Country<select value={country} onChange={(event) => setCountry(event.target.value as CountryCode | "all")}><option value="all">All countries</option>{data?.facets.countries.map((code) => <option key={code} value={code}>{countryName(code)}</option>)}</select></label>
         </div>
       </section>
+      <DirectoryExplainer
+        eyebrow="Before you apply"
+        id="opportunity-directory-guide"
+        title="Check the repository, scope, and contact path."
+      >
+        <p>
+          Every request begins with a maintainer who controls an active,
+          owner-verified project record. The public opportunity link must point
+          back into that repository, so you can inspect the issue, discussion,
+          contribution guide, license, and recent activity before responding.
+        </p>
+        <p>
+          Filter by language, category, or community to narrow the list. Open
+          the project record to review its disclosed sponsored placement and
+          verification history. Placement spend does not move an opportunity up
+          this directory; recently updated project records appear first.
+        </p>
+        <p>
+          A private application sends your published contributor profile and
+          message to the maintainer. It does not create employment, a bounty, or
+          a payment promise. Agree on scope, review expectations, attribution,
+          and compensation outside Bidstage before starting work.
+        </p>
+      </DirectoryExplainer>
       <p className="visually-hidden" role="status" aria-atomic="true">{error ? "Contribution opportunities unavailable." : data ? `${data.opportunities.length} opportunities match the selected filters.` : "Loading contribution opportunities."}</p>
       <section className="opportunity-results shell" aria-busy={!data && !error}>
         {error ? <div className="state error-state"><strong>Opportunities unavailable.</strong><span>{error}</span><button type="button" onClick={() => void load()}>Try again</button></div> : !data ? <div className="state"><span className="loader" aria-hidden="true" /><strong>Reading contribution requests…</strong></div> : data.opportunities.length === 0 ? <div className="directory-empty"><strong>No opportunities match these filters.</strong><p>Change the filters or ask a verified maintainer to publish a concrete contribution request.</p><a href="/account">Manage a project</a></div> : <ol className="opportunity-cards">{data.opportunities.map((opportunity, index) => <li key={opportunity.slug}>

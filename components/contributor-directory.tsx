@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { countryName, type CountryCode } from "@/lib/countries";
 import type { ContributorAvailability } from "@/lib/contributor-profile";
+import { DirectoryExplainer } from "@/components/directory-explainer";
 
 type Contributor = {
   githubLogin: string;
@@ -67,6 +68,32 @@ export function ContributorDirectory({
           <button type="button" onClick={() => void load()}>Refresh</button>
         </div>
       </section>
+
+      <DirectoryExplainer
+        eyebrow="Using public profiles"
+        id="contributor-directory-guide"
+        title="Find a contributor, then verify the fit on GitHub."
+      >
+        <p>
+          Contributors publish their own headline, skills, availability, and
+          optional community location after signing in with GitHub. Bidstage
+          links each result to that public GitHub identity so you can review
+          recent work, repositories, and the contact methods the contributor
+          chose to expose.
+        </p>
+        <p>
+          Filters describe self-reported interests rather than a certification
+          or ranking. Availability can change, and a listed skill does not prove
+          experience with your stack. Send a specific project link, problem
+          statement, expected review process, and timing when you make contact.
+        </p>
+        <p>
+          Contributor ordering is independent of sponsored placement. Projects
+          cannot pay to move a person higher in this directory, and a profile
+          does not imply employment or endorsement. Profile owners can update or
+          remove their public information from the account page.
+        </p>
+      </DirectoryExplainer>
 
       <p className="visually-hidden" role="status" aria-atomic="true">{error ? "Contributor directory unavailable." : data ? `${data.contributors.length} contributor profiles match the selected filters.` : "Loading contributor profiles."}</p>
       <section className="contributor-results shell" aria-busy={!data && !error}>

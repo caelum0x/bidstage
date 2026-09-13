@@ -6,6 +6,7 @@ import { isCountryCode } from "@/lib/countries";
 export const metadata = {
   title: "Open-source contributors",
   description: "Find opt-in, GitHub-linked open-source contributors by skill, country, and availability.",
+  alternates: { canonical: "/contributors" },
 };
 
 export default async function ContributorsPage({

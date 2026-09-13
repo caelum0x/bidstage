@@ -6,6 +6,7 @@ import { isCountryCode } from "@/lib/countries";
 export const metadata = {
   title: "Open-source contribution opportunities",
   description: "Find maintainer-authored contribution opportunities bound to verified open-source repositories.",
+  alternates: { canonical: "/opportunities" },
 };
 
 export default async function OpportunitiesPage({

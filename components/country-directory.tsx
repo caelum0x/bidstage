@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { countryName, type CountryCode } from "@/lib/countries";
+import { DirectoryExplainer } from "@/components/directory-explainer";
 
 type CountrySummary = {
   countryCode: CountryCode;
@@ -69,6 +70,33 @@ export function CountryDirectory() {
           <span>Represented now</span><strong>{data ? data.countries.length : "—"}</strong><small>country communities with public records</small>
         </div>
       </section>
+
+      <DirectoryExplainer
+        eyebrow="How the directory works"
+        id="country-directory-guide"
+        title="Follow open-source activity by community."
+      >
+        <p>
+          Country boards connect three public records: owner-verified projects,
+          maintainer-authored contribution requests, and contributors who chose
+          to publish a profile. Use a board to find repositories and people tied
+          to a community, then open the underlying project record or GitHub
+          profile before deciding to contribute.
+        </p>
+        <p>
+          Location is optional and self-described. Bidstage does not infer it
+          from an IP address, payment, repository owner, or company registration.
+          A project can remain global, and a contributor can remove or change a
+          public location from their account.
+        </p>
+        <p>
+          Placement spend orders sponsored projects only. It does not order
+          contribution requests or contributor profiles, and it does not prove
+          local ownership, code quality, security, or availability. Read the
+          repository license, issue or contribution link, and public profile
+          before contacting anyone.
+        </p>
+      </DirectoryExplainer>
 
       <p className="visually-hidden" role="status" aria-atomic="true">
         {error ? "Country communities unavailable." : data ? `${data.countries.length} country communities loaded.` : "Loading country communities."}
