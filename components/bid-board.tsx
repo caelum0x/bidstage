@@ -332,7 +332,7 @@ export function BidBoard({
             <div className="pricing-callout" aria-label="Upvote pricing">
               <span>Pricing</span>
               <div className="pricing-callout-head"><strong>${UPVOTE_DOLLARS}</strong><em>per upvote</em></div>
-              <p>Buy any number of upvotes — 1 for ${UPVOTE_DOLLARS}, 20 for $100, 200 for $1,000, up to {usd0.format(MAX_BID_CENTS / 100)}. Each upvote adds ${UPVOTE_DOLLARS} to a project&rsquo;s public rank. It&rsquo;s a one-time purchase, not a subscription. Each ${UPVOTE_DOLLARS} upvote includes a {PLATFORM_FEE_PERCENT}% Bidstage platform fee.</p>
+              <p><strong>Minimum purchase: ${UPVOTE_DOLLARS}. Maximum per checkout: {usd0.format(MAX_BID_CENTS / 100)}.</strong> Buy 1 upvote for ${UPVOTE_DOLLARS}, 20 for $100, or 200 for $1,000. Each upvote adds ${UPVOTE_DOLLARS} to a project&rsquo;s public rank. It&rsquo;s a one-time purchase, not a subscription. Each ${UPVOTE_DOLLARS} upvote includes a {PLATFORM_FEE_PERCENT}% Bidstage platform fee.</p>
             </div>
             <div className="proof-row">
               <span><strong>{board ? board.totals.entries : "—"}</strong> verified projects</span>

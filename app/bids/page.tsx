@@ -84,7 +84,7 @@ export default async function BidsPage() {
         <div className="bid-guide-heading">
           <span>Sponsored ranking for verified open source</span>
           <h1>${UPVOTE_DOLLARS} per upvote.<br /><em>Buy any amount.</em></h1>
-          <p>Upvotes cost ${UPVOTE_DOLLARS}.00 each. Buy any quantity — 1 for ${UPVOTE_DOLLARS}, 20 for $100, 200 for $1,000, up to {money.format(MAX_BID_CENTS / 100)} ({MAX_UPVOTES.toLocaleString("en-US")} upvotes). Each upvote adds ${UPVOTE_DOLLARS} to the project only after the payment provider sends a valid signed settlement event. The public board ranks active projects by net settled total. It&rsquo;s a one-time purchase, not a subscription.</p>
+          <p><strong>Minimum purchase: ${UPVOTE_DOLLARS}. Maximum per checkout: {money.format(MAX_BID_CENTS / 100)} ({MAX_UPVOTES.toLocaleString("en-US")} upvotes).</strong> Upvotes cost ${UPVOTE_DOLLARS}.00 each: buy 1 for ${UPVOTE_DOLLARS}, 20 for $100, or 200 for $1,000. Each upvote adds ${UPVOTE_DOLLARS} to the project only after the payment provider sends a valid signed settlement event. The public board ranks active projects by net settled total. It&rsquo;s a one-time purchase, not a subscription.</p>
           <div className="bid-guide-actions"><a href="/#top">Buy upvotes</a><a href="/account">Add to an existing project</a></div>
         </div>
         <aside className="bid-boundary-note">
