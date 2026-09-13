@@ -41,3 +41,11 @@ export function categoryPageTitle(category: Category) {
     ? "Other open-source projects"
     : `${label} open-source projects`;
 }
+
+export function categoryPageDescription(category: Category) {
+  if (category === "other") {
+    return "Browse owner-verified open-source projects outside Bidstage's main categories. Compare sponsored placement, licenses, languages, and repository records.";
+  }
+  const label = category === "ai" ? "AI" : content[category].label.toLowerCase();
+  return `Browse owner-verified ${label} open-source projects. Compare disclosed sponsored placement, licenses, languages, and repository records.`;
+}

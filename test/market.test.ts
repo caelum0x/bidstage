@@ -33,11 +33,20 @@ import { edgeRateLimitKey } from "../lib/edge-rate-limit";
 import { authorizedMaintenanceRequest } from "../lib/maintenance-auth";
 import { MAINTENANCE_CRON, maintenanceNeedsAttention, parseMaintenanceInvocation } from "../lib/scheduled-maintenance";
 import { sampleRankHistory, type RankHistoryPoint } from "../lib/rank-history";
-import { categoryPageTitle } from "../lib/category-content";
+import { categoryPageDescription, categoryPageTitle } from "../lib/category-content";
 
 test("category page titles stay grammatical", () => {
   assert.equal(categoryPageTitle("ai"), "AI open-source projects");
   assert.equal(categoryPageTitle("other"), "Other open-source projects");
+});
+
+test("category search descriptions stay concise and distinct", () => {
+  const descriptions = ["ai", "developer", "design", "commerce", "consumer", "other"].map(
+    (category) => categoryPageDescription(category as Parameters<typeof categoryPageDescription>[0]),
+  );
+
+  assert.equal(new Set(descriptions).size, descriptions.length);
+  assert.ok(descriptions.every((description) => description.length <= 155));
 });
 
 test("normalizes public destinations and stable X handles", () => {
