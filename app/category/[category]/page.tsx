@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   const content = categoryContent(category);
   return {
     title: `${content.label} open-source projects`,
-    description: `${content.description} Compare public sponsored rank, placement totals, licenses, and project records.`,
+    description: `Browse owner-verified open-source projects in Bidstage's ${content.label} category. Compare sponsored rank, placement totals, licenses, and public records.`,
     alternates: { canonical: `/category/${category}` },
   };
 }

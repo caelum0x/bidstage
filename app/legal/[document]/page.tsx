@@ -77,7 +77,7 @@ const documents = {
   },
   processors: {
     title: "Service provider register",
-    summary: "These companies receive data only for the listed Bidstage function. The configured payment provider receives checkout data; the other payment provider does not receive a new purchase.",
+    summary: "See the service providers Bidstage uses, what each provider processes, why it is used, and where its processing takes place.",
     sections: [
       { title: "Cloudflare", body: "Cloudflare hosts the Worker and static assets, protects forms with Turnstile, answers destination DNS checks, routes support mail, and runs public URL scans. Cloudflare may process request metadata, security signals, support-routing metadata, and submitted public destination URLs." },
       { title: "Neon", body: "Neon hosts PostgreSQL records for accounts, listings, payment references, public ledgers, contributor profiles, private applications, support, moderation, and operator audits. Bidstage connects through a restricted runtime role and Cloudflare Hyperdrive." },

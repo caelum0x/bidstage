@@ -9,6 +9,7 @@ const PLATFORM_FEE_PERCENT = PLATFORM_FEE_BPS / 100;
 export const metadata = {
   title: "Pricing — $5 per upvote",
   description: "Upvotes cost $5.00 each. Buy any quantity to boost a verified open-source project up Bidstage's public, settled ledger. One-time purchase, not a subscription.",
+  alternates: { canonical: "/bids" },
 };
 
 type BidTotalsRow = {

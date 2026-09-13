@@ -26,13 +26,16 @@ const ledgerMono = IBM_Plex_Mono({
 
 const fontVariables = `${displaySerif.variable} ${bodySans.variable} ${ledgerMono.variable}`;
 
+const metadataDescription =
+  "Find owner-verified open-source projects by language and country, contribute to active repositories, or promote your repo with transparent paid placement.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://bidstage.app"),
   title: {
     default: "Bidstage — Discover Open-Source Projects & Promote Yours",
     template: "%s | Bidstage",
   },
-  description: "Browse open-source projects by language and country to find where to contribute — or promote your own repo with transparent, labeled placement. Every spend and click is public.",
+  description: metadataDescription,
   keywords: [
     "open source projects to contribute to",
     "find open source projects by language",
@@ -47,14 +50,14 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Bidstage",
     title: "Bidstage — Discover Open-Source Projects & Promote Yours",
-    description: "Browse open-source projects by language and country to find where to contribute — or promote your own repo with transparent, labeled placement. Every spend and click is public.",
+    description: metadataDescription,
     url: "/",
     images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "Bidstage — discover and promote open-source projects in public" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Bidstage — Discover Open-Source Projects & Promote Yours",
-    description: "Browse open-source projects by language and country to find where to contribute — or promote your own repo with transparent, labeled placement.",
+    description: metadataDescription,
     images: ["/twitter-image"],
   },
   robots: {
