@@ -794,6 +794,24 @@ test("public crawl routes expose real open-source records and exclude private fl
   assert.match(listing, /BreadcrumbList/);
 });
 
+test("opportunities are server rendered for contribution search intent", () => {
+  const page = readFileSync(new URL("../app/opportunities/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /title: "Open Source Projects to Contribute To"/);
+  assert.match(page, /await readPublicOpportunities/);
+  assert.match(page, /initialData=\{initialData\}/);
+  assert.match(page, /"@type": "FAQPage"/);
+  assert.match(page, /replace\(\/<\/g, "\\\\u003c"\)/);
+
+  const directory = readFileSync(new URL("../components/opportunity-directory.tsx", import.meta.url), "utf8");
+  assert.match(directory, /Open-source projects/);
+  assert.match(directory, /OPPORTUNITY_FAQS\.map/);
+  assert.match(directory, /hasHydratedInitialData/);
+
+  const content = readFileSync(new URL("../lib/opportunity-content.ts", import.meta.url), "utf8");
+  assert.match(content, /How do I find open-source projects to contribute to\?/);
+  assert.match(content, /Which open-source projects are suitable for beginners\?/);
+});
+
 test("manual production verification requires isolated PostgreSQL and deployed HTTP", () => {
   const packageManifest = JSON.parse(
     readFileSync(new URL("../package.json", import.meta.url), "utf8"),

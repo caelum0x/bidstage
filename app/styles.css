@@ -678,6 +678,9 @@ footer>div:last-child { display:flex; gap:18px; }
 .directory-explainer h2 { margin:0; font:700 clamp(30px,4vw,46px)/.95 var(--font-serif, Georgia, serif); letter-spacing:-.02em; }
 .directory-explainer-copy { display:grid; gap:14px; }
 .directory-explainer-copy p { margin:0; font:11px/1.7 var(--font-mono, ui-monospace, "Courier New", monospace); }
+.directory-faq { display:grid; gap:7px; padding-bottom:14px; border-bottom:1px solid rgba(0,0,0,.28); }
+.directory-faq:last-child { padding-bottom:0; border-bottom:0; }
+.directory-faq h3 { margin:0; font:700 15px/1.35 var(--font-sans, Helvetica, Arial, sans-serif); }
 .category-index-grid article { min-height:350px; display:flex; flex-direction:column; border:2px solid #000; background:#EDE4CF; padding:18px; box-shadow:8px 8px 0 #00FFCC,12px 12px 0 #FF006E; transform:rotate(-.5deg); }
 .category-index-grid article:nth-child(2n) { box-shadow:8px 8px 0 #DFFF00,12px 12px 0 #FF71CE; transform:rotate(.7deg); }
 .category-index-grid article>span { font:700 11px var(--font-mono, ui-monospace, "Courier New", monospace); }

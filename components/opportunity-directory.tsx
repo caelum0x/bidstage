@@ -1,36 +1,22 @@
 "use client";
 
-import { type FormEvent, useCallback, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { countryName, type CountryCode } from "@/lib/countries";
 import { CATEGORIES, type Category } from "@/lib/market";
 import { DirectoryExplainer } from "@/components/directory-explainer";
-
-type Opportunity = {
-  slug: string;
-  title: string;
-  category: Category;
-  repository: string;
-  repositoryUrl: string;
-  primaryLanguage: string | null;
-  licenseSpdx: string;
-  countryCode: CountryCode | null;
-  contributionUrl: string;
-  contributionNote: string;
-  updatedAt: string;
-};
-
-type OpportunityData = {
-  opportunities: Opportunity[];
-  facets: { languages: string[]; countries: CountryCode[] };
-};
+import { OPPORTUNITY_FAQS } from "@/lib/opportunity-content";
+import type { PublicOpportunityData } from "@/lib/public-opportunities";
 
 export function OpportunityDirectory({
   initialCountry = "all",
+  initialData,
 }: {
   initialCountry?: CountryCode | "all";
+  initialData?: PublicOpportunityData;
 }) {
-  const [data, setData] = useState<OpportunityData>();
+  const [data, setData] = useState<PublicOpportunityData | undefined>(initialData);
+  const hasHydratedInitialData = useRef(Boolean(initialData));
   const [category, setCategory] = useState<Category | "all">("all");
   const [language, setLanguage] = useState("all");
   const [country, setCountry] = useState<CountryCode | "all">(initialCountry);
@@ -52,13 +38,19 @@ export function OpportunityDirectory({
       const response = await fetch(`/api/opportunities${params.size ? `?${params}` : ""}`, { cache: "no-store" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.message ?? "Contribution opportunities could not be loaded.");
-      setData(body as OpportunityData);
+      setData(body as PublicOpportunityData);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Contribution opportunities could not be loaded.");
     }
   }, [category, country, language]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (hasHydratedInitialData.current) {
+      hasHydratedInitialData.current = false;
+      return;
+    }
+    void load();
+  }, [load]);
 
   async function apply(event: FormEvent<HTMLFormElement>, slug: string) {
     event.preventDefault();
@@ -93,7 +85,7 @@ export function OpportunityDirectory({
       <nav className="receipt-nav shell" aria-label="Primary navigation"><a className="brand" href="/"><span className="brand-mark">B</span>bidstage</a><div><a href="/bids">How bidding works</a><a href="/countries">Countries</a><a href="/contributors">Contributors</a><a href="/account">Maintainer account</a></div></nav>
       <section className="opportunities-hero shell">
         <div className="eyebrow"><span>Maintainer-authored requests</span><span>Verified repositories</span></div>
-        <div className="opportunities-heading"><h1>Start with work<br /><em>that needs doing.</em></h1><p>These requests come from maintainers with active sponsored project records and link back inside the verified repository. Recently updated project records appear first; placement spend does not set this order.</p></div>
+        <div className="opportunities-heading"><h1>Open-source projects<br /><em>to contribute to.</em></h1><p>Find concrete requests from maintainers of verified repositories. Filter by language, category, or country, then inspect the linked issue and contribution rules before you begin. Placement spend does not set this order.</p></div>
         <div className="opportunity-filters">
           <label>Category<select value={category} onChange={(event) => setCategory(event.target.value as Category | "all")}><option value="all">All categories</option>{CATEGORIES.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
           <label>Language<select value={language} onChange={(event) => setLanguage(event.target.value)}><option value="all">All languages</option>{data?.facets.languages.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
@@ -123,6 +115,18 @@ export function OpportunityDirectory({
           a payment promise. Agree on scope, review expectations, attribution,
           and compensation outside Bidstage before starting work.
         </p>
+      </DirectoryExplainer>
+      <DirectoryExplainer
+        eyebrow="Contributor questions"
+        id="opportunity-faq"
+        title="Choose a contribution you can finish and verify."
+      >
+        {OPPORTUNITY_FAQS.map((item) => (
+          <div className="directory-faq" key={item.question}>
+            <h3>{item.question}</h3>
+            <p>{item.answer}</p>
+          </div>
+        ))}
       </DirectoryExplainer>
       <p className="visually-hidden" role="status" aria-atomic="true">{error ? "Contribution opportunities unavailable." : data ? `${data.opportunities.length} opportunities match the selected filters.` : "Loading contribution opportunities."}</p>
       <section className="opportunity-results shell" aria-busy={!data && !error}>
