@@ -1,4 +1,12 @@
-# Bidstage
+# Bidstage (v1 — pay-to-rank marketplace)
+
+> **Status:** this repo is v1 of Bidstage, a pay-to-rank marketplace concept. The
+> active Bidstage product has since pivoted to a government-tenders discovery
+> tool, built and deployed from
+> [`bidstage-tenders`](https://github.com/caelum0x/bidstage-tenders)
+> (production: https://bidstage.app). This repo is kept for its source —
+> payment-webhook settlement, abuse/DNS-safety gates, and ranking logic — which
+> may be reused, but it is not the one being deployed going forward.
 
 Bidstage is a production paid-discovery marketplace: open-source projects make one-time
 contributions, verified settlement updates a public ranking, and every outbound
